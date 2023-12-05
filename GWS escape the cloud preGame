@@ -1,0 +1,60 @@
+function onOpen() {
+
+  var uI = SpreadsheetApp.getUi();
+  uI.createMenu('Clear Shared').addItem('Clear', 'clearShared').addToUi();
+}
+
+function clearShared(){
+ 
+ var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('preGame');
+ var data = ss.getDataRange().getValues();
+ //var date = new Date('April 20, 2021');
+
+ Logger.log(data.length);
+
+  for (i=1; i<data.length; i++) {
+
+    var row = data[i];
+    var email = row[1];
+    DriveApp.getFolderById('1OasISdoshQA4wmbB4Lgzp64V6YfZ7d-t').revokePermissions(email);
+    CalendarApp.getEventById('2cq5ll05dlehg1jc83qvc5e36l').removeGuest(email);
+
+    Logger.log(email);
+  }
+}
+
+function flujoJuego() {
+
+  //Gets email from last row on Sheet (latest form response) and shares The Drive Folder "hello, world" with a Google My Maps file inside for the Drive Room question
+  var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('preGame');
+  var lastRow = ss.getLastRow();
+  var data = ss.getRange(lastRow, 1, lastRow, 3).getValues();
+  var email = data[0][1];
+  var folder = DriveApp.getFolderById('1OasISdoshQA4wmbB4Lgzp64V6YfZ7d-t');
+  //var date = new Date('April 20, 2042');
+
+  //Gives permission to view on the folder WITHOUT notifying the user. The player will have to find the folder in "Shared with me"
+  Drive.Permissions.insert(
+   {
+     'role': 'reader',
+     'type': 'user',
+     'value': email,
+   },
+   folder.getId(),
+   {
+     'sendNotificationEmails': false
+   }
+  );
+
+  /* Gets Events for date of April 20, 2042, and gets id of calendar event.
+  var events = CalendarApp.getEventsForDay(date);
+  var eventId = events[0].getId();
+  Logger.log(eventId);
+  */
+
+  //Adds player to event for Calendar Room
+  CalendarApp.getEventById('2cq5ll05dlehg1jc83qvc5e36l').addGuest(email);
+
+  
+
+}
