@@ -1,0 +1,61 @@
+function onOpen() {
+
+  var uI = SpreadsheetApp.getUi();
+  uI.createMenu('Clear Shared').addItem('Clear', 'clearShared').addToUi();
+}
+
+function clearShared(){
+ 
+ var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('previo');
+ var data = ss.getDataRange().getValues();
+ var date = new Date('April 20, 2021');
+
+ Logger.log(data.length);
+
+ for (i=1; i<data.length; i++) {
+
+      var row = data[i];
+      var email = row[1];
+      DriveApp.getFolderById('12MQEDjpDqB119PbhFBWHVnVl7K_vJAHC').revokePermissions(email);
+      //var event = CalendarApp.getEventById('26dij4tjak9p421q7keblq8u85');
+      //var eventId = events[1].getId();
+      CalendarApp.getEventById('26dij4tjak9p421q7keblq8u85').removeGuest(email);
+
+      Logger.log(email);
+
+
+ }
+
+
+}
+
+function flujoJuego() {
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('previo');
+  var lastRow = ss.getLastRow();
+  var data = ss.getRange(lastRow, 1, lastRow, 3).getValues();
+  var email = data[0][1];
+  var folder = DriveApp.getFolderById('12MQEDjpDqB119PbhFBWHVnVl7K_vJAHC');
+  var date = new Date('April 20, 2021');
+
+  Logger.log(email);
+
+  Drive.Permissions.insert(
+   {
+     'role': 'reader',
+     'type': 'user',
+     'value': email,
+   },
+   folder.getId(),
+   {
+     'sendNotificationEmails': false
+   }
+  );
+
+  //var events = CalendarApp.getEventsForDay(date);
+  //var eventId = events[1].getId();
+  CalendarApp.getEventById('26dij4tjak9p421q7keblq8u85').addGuest(email);
+
+  //Logger.log(events);
+
+}
