@@ -1,1 +1,112 @@
+function getDest()
+{
+  var ssDest = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('dest');
+  var destData = ssDest.getDataRange().getValues();
+
+  var i = 0;
+
+  while (i < destData.length && destData[i][1] == 'sent')
+    i++;
+
+  Logger.log(destData[i][0]);
+  // Set sent status to dest as sent
+  ssDest.getRange(i + 1, 2).setValue('sent');
+  return (destData[i][0]);
+}
+
+function sendEmail()
+{
+  var dest = getDest();
+  var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Respuestas de formulario 1');
+  var lastRow = ss.getLastRow();
+  var data = ss.getRange(lastRow, 1, lastRow, 2).getValues();
+  Logger.log(data);
+
+  var template = data[0][1];
+  Logger.log(template);
+  
+  if (template == '"Mejor que mil días de estudio diligente es un día con un gran maestro."')
+  {
+    var imgGranDia = DriveApp.getFileById('1-rgjBmTMf78BkClybQ0uQB4nSBxdQAu2').getBlob().setName('imgGranDia');
+    //https://drive.google.com/file/d/1-rgjBmTMf78BkClybQ0uQB4nSBxdQAu2/view?usp=sharing
+    //https://drive.google.com/file/d/1-G3oL8NkHXAFL9Iw4TkORalO0hBIOCze/view?usp=sharing
+
+    MailApp.sendEmail(
+    {
+      to: dest,
+      subject: 'Feliz día del docente',
+      htmlBody:'<body style="background-color: #FAFAFA; font-family: Roboto; color: #202020;"><table align="center" border="0" cellpadding="0" cellspacing="0" width="600" margin=0 auto" bgcolor="white" padding="0px 5px"><tbody><tr><td style="font-size: 12px; text-align: align: center; margin: 0 auto;"><div style="text-align: justify;">Hola profe,<br><br>Este es tu mensaje en botella, que recibes porque algún otro docente ha querido enviar un mensaje bonito a la nube en vuestro día para agradecer la gran labor que realizáis, ¡y te ha llegado a ti!<br><br>Anímate a repartir ilusión a otro docente, accediendo al <a href="https://docs.google.com/forms/d/e/1FAIpQLSdtoAc1kpj9__dU25Jjognk-axCoT3X1h1XvxtF3sPMXXeIDQ/viewform"><span style="color:#0000FF">siguiente formulario</span></a>, seleccionando el mensaje que más te guste y nosotros nos encargamos del resto. Son mensajes anónimos, ¡como los verdaderos mensajes en botella!</div></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding="0px 0px"><tr><td align="center"><img align="center" alt="Mejor que mil días de estudio diligente es un día con un gran maestro." margin="3px" img src="cid:msgGranDia" width="100%" style="max-width:515px; padding-bottom: 0; display: inline !important; vertical-align: bottom;"></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding="0px 0px"><tr><td style="font-size: 12px; text-align: align: center; margin: 0 auto;"><div style="text-align: justify;">Ud. ha recibido esta notificación porque consta en la base de datos de la empresa IEDUCANDO, S.L. y/o le ha prestado su consentimiento expreso para recibir comunicaciones comerciales.<br><br>De conformidad con el Reglamento (UE) núm.2016/679, General de Protección de Datos, Ud. puede ejercer de forma totalmente gratuita los derechos de acceso, información, rectificación, supresión y olvido, limitación del tratamiento, oposición, portabilidad y a no ser objeto de decisiones individuales automatizadas enviando un e-mail a PRIVACIDAD@IEDUCANDO.COM<br><br>Si no desea recibir información por correo electrónico, puede revocar su consentimiento comunicándose vía e-mail a PRIVACIDAD@IEDUCANDO.COM o darse de baja servicio aquí <a href="mailto:PRIVACIDAD@IEDUCANDO.COM" target="_blank"><span style="color:#0000FF">PRIVACIDAD@IEDUCANDO.COM</span></a></div></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding-bottom:"2px"></tbody></table>',
+      inlineImages:
+      {
+        msgGranDia: imgGranDia
+      }
+    });
+
+  // Set the status for template to sent
+    ss.getRange(lastRow, 3).setValue('sent');
+  }
+  
+  else if (template == '"Sin profes como tú, la vida no tendría clase."')
+  {
+    var imgVidaClase = DriveApp.getFileById('1HxX98KmTgxXBox6LgvnfHahDuCOEz9eY').getBlob().setName('imgVidaClase');
+    //https://drive.google.com/file/d/1HxX98KmTgxXBox6LgvnfHahDuCOEz9eY/view?usp=sharing
+
+    MailApp.sendEmail(
+    {
+      to: dest,
+      subject: 'Feliz día del docente',
+      htmlBody:'<body style="background-color: #FAFAFA; font-family: Roboto; color: #202020;"><table align="center" border="0" cellpadding="0" cellspacing="0" width="600" margin=0 auto" bgcolor="white" padding="0px 5px"><tbody><tr><td style="font-size: 12px; text-align: align: center; margin: 0 auto;"><div style="text-align: justify;">Hola profe,<br><br>Este es tu mensaje en botella, que recibes porque algún otro docente ha querido enviar un mensaje bonito a la nube en vuestro día para agradecer la gran labor que realizáis, ¡y te ha llegado a ti!<br><br>Anímate a repartir ilusión a otro docente, accediendo al <a href="https://docs.google.com/forms/d/e/1FAIpQLSdtoAc1kpj9__dU25Jjognk-axCoT3X1h1XvxtF3sPMXXeIDQ/viewform"><span style="color:#0000FF">siguiente formulario</span></a>, seleccionando el mensaje que más te guste y nosotros nos encargamos del resto. Son mensajes anónimos, ¡como los verdaderos mensajes en botella!</div></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding="0px 0px"><tr><td align="center"><img align="center" alt="Sin profes como tú la vida no tiene clase" margin="3px" img src="cid:msgVidaClase" width="100%" style="max-width:515px; padding-bottom: 0; display: inline !important; vertical-align: bottom;"></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding="0px 0px"> <tr><td style="font-size: 12px; text-align: align: center; margin: 0 auto;"><div style="text-align: justify;">Ud. ha recibido esta notificación porque consta en la base de datos de la empresa IEDUCANDO, S.L. y/o le ha prestado su consentimiento expreso para recibir comunicaciones comerciales.<br><br>De conformidad con el Reglamento (UE) núm.2016/679, General de Protección de Datos, Ud. puede ejercer de forma totalmente gratuita los derechos de acceso, información, rectificación, supresión y olvido, limitación del tratamiento, oposición, portabilidad y a no ser objeto de decisiones individuales automatizadas enviando un e-mail a PRIVACIDAD@IEDUCANDO.COM<br><br>Si no desea recibir información por correo electrónico, puede revocar su consentimiento comunicándose vía e-mail a PRIVACIDAD@IEDUCANDO.COM o darse de baja servicio aquí <a href="mailto:PRIVACIDAD@IEDUCANDO.COM" target="_blank"><span style="color:#0000FF">PRIVACIDAD@IEDUCANDO.COM</span></a></div></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding-bottom:"2px"></tbody></table>',
+      inlineImages:
+      {
+        msgVidaClase: imgVidaClase
+      }
+    });
+
+    // Set the status to sent
+    ss.getRange(lastRow, 3).setValue('sent');
+  }
+
+  else if (template == '"El objeto más noble que puede ocupar el ser humano es ilustrar a sus semejantes."')
+  {
+    var imgIlustrar = DriveApp.getFileById('1ePMo5LHqifg9Ny73PNvWEQnfirATtG-a').getBlob().setName('imgIlustrar');
+    //https://drive.google.com/file/d/1ePMo5LHqifg9Ny73PNvWEQnfirATtG-a/view?usp=sharing
+
+    MailApp.sendEmail(
+    {
+      to: dest,
+      subject: 'Feliz día del docente',
+      htmlBody:'<body style="background-color: #FAFAFA; font-family: Roboto; color: #202020;"><table align="center" border="0" cellpadding="0" cellspacing="0" width="600" margin=0 auto" bgcolor="white" padding="0px 5px"><tbody><tr><td style="font-size: 12px; text-align: align: center; margin: 0 auto;"><div style="text-align: justify;">Hola profe,<br><br>Este es tu mensaje en botella, que recibes porque algún otro docente ha querido enviar un mensaje bonito a la nube en vuestro día para agradecer la gran labor que realizáis, ¡y te ha llegado a ti!<br><br>Anímate a repartir ilusión a otro docente, accediendo al <a href="https://docs.google.com/forms/d/e/1FAIpQLSdtoAc1kpj9__dU25Jjognk-axCoT3X1h1XvxtF3sPMXXeIDQ/viewform"><span style="color:#0000FF">siguiente formulario</span></a>, seleccionando el mensaje que más te guste y nosotros nos encargamos del resto. Son mensajes anónimos, ¡como los verdaderos mensajes en botella!</div></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding="0px 0px"><tr><td align="center"><img align="center" alt="El objeto más noble que puede ocupar el ser humano es ilustrar a sus semejantes" margin="3px" img src="cid:msgIlustrar" width="100%" style="max-width:515px; padding-bottom: 0; display: inline !important; vertical-align: bottom;"></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding="0px 0px"> <tr><td style="font-size: 12px; text-align: align: center; margin: 0 auto;"><div style="text-align: justify;">Ud. ha recibido esta notificación porque consta en la base de datos de la empresa IEDUCANDO, S.L. y/o le ha prestado su consentimiento expreso para recibir comunicaciones comerciales.<br><br>De conformidad con el Reglamento (UE) núm.2016/679, General de Protección de Datos, Ud. puede ejercer de forma totalmente gratuita los derechos de acceso, información, rectificación, supresión y olvido, limitación del tratamiento, oposición, portabilidad y a no ser objeto de decisiones individuales automatizadas enviando un e-mail a PRIVACIDAD@IEDUCANDO.COM<br><br>Si no desea recibir información por correo electrónico, puede revocar su consentimiento comunicándose vía e-mail a PRIVACIDAD@IEDUCANDO.COM o darse de baja servicio aquí <a href="mailto:PRIVACIDAD@IEDUCANDO.COM" target="_blank"><span style="color:#0000FF">PRIVACIDAD@IEDUCANDO.COM</span></a></div></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding-bottom:"2px"></tbody></table>',
+      inlineImages:
+      {
+        msgIlustrar: imgIlustrar
+      }
+    });
+
+    // Set the status to sent
+    ss.getRange(lastRow, 3).setValue('sent');
+
+  }
+
+  else if (template == '"Los grandes docentes motivan, inspiran y cambian el mundo."')
+  {
+    var imgCambiarMundo = DriveApp.getFileById('1XXOM5wxzAD9F7U0yeiwnlXuR-jr3o1ef').getBlob().setName('imgCambiarMundo');
+    //https://drive.google.com/file/d/1XXOM5wxzAD9F7U0yeiwnlXuR-jr3o1ef/view?usp=sharing
+
+    MailApp.sendEmail(
+    {
+      to: dest,
+      subject: 'Feliz día del docente',
+      htmlBody:'<body style="background-color: #FAFAFA; font-family: Roboto; color: #202020;"><table align="center" border="0" cellpadding="0" cellspacing="0" width="600" margin=0 auto" bgcolor="white" padding="0px 5px"><tbody><tr><td style="font-size: 12px; text-align: align: center; margin: 0 auto;"><div style="text-align: justify;">Hola profe,<br><br>Este es tu mensaje en botella, que recibes porque algún otro docente ha querido enviar un mensaje bonito a la nube en vuestro día para agradecer la gran labor que realizáis, ¡y te ha llegado a ti!<br><br>Anímate a repartir ilusión a otro docente, accediendo al <a href="https://docs.google.com/forms/d/e/1FAIpQLSdtoAc1kpj9__dU25Jjognk-axCoT3X1h1XvxtF3sPMXXeIDQ/viewform"><span style="color:#0000FF">siguiente formulario</span></a>, seleccionando el mensaje que más te guste y nosotros nos encargamos del resto. Son mensajes anónimos, ¡como los verdaderos mensajes en botella!</div></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding="0px 0px"><tr><td align="center"><img align="center" alt="Los grandes docentes motivan, inspiran y cambian el mundo." margin="3px" img src="cid:msgCambiarMundo" width="100%" style="max-width:515px; padding-bottom: 0; display: inline !important; vertical-align: bottom;"></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding="0px 0px"> <tr><td style="font-size: 12px; text-align: align: center; margin: 0 auto;"><div style="text-align: justify;">Ud. ha recibido esta notificación porque consta en la base de datos de la empresa IEDUCANDO, S.L. y/o le ha prestado su consentimiento expreso para recibir comunicaciones comerciales.<br><br>De conformidad con el Reglamento (UE) núm.2016/679, General de Protección de Datos, Ud. puede ejercer de forma totalmente gratuita los derechos de acceso, información, rectificación, supresión y olvido, limitación del tratamiento, oposición, portabilidad y a no ser objeto de decisiones individuales automatizadas enviando un e-mail a PRIVACIDAD@IEDUCANDO.COM<br><br>Si no desea recibir información por correo electrónico, puede revocar su consentimiento comunicándose vía e-mail a PRIVACIDAD@IEDUCANDO.COM o darse de baja servicio aquí <a href="mailto:PRIVACIDAD@IEDUCANDO.COM" target="_blank"><span style="color:#0000FF">PRIVACIDAD@IEDUCANDO.COM</span></a></div></td></tr><hr size="3" width="600px" position="center" color="#EAEAEA" padding-bottom:"2px"></tbody></table>',
+      inlineImages:
+      {
+        msgCambiarMundo: imgCambiarMundo
+      }
+    });
+
+    // Set the status to sent
+    ss.getRange(lastRow, 3).setValue('sent');
+
+  }
+
+}
 
