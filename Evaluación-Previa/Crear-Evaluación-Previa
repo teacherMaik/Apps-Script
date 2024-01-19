@@ -1,0 +1,198 @@
+//Script Bound to Answer Sheet Linked to From with an ON SUBMIT TRIGGER
+
+function intialEv() {
+
+  //Declares Spreadsheet Variable selecting sheet with form submissions
+  var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Respuestas de formulario 1');
+
+  //Declares variable of last row, which will be the most recent submission due to trigger. Gets all values in that row as an ARRAY
+  var lastRow = ss.getLastRow();
+  var data = ss.getRange(lastRow,1,lastRow,11).getValues();
+
+  //Users submit Client folder URL copied from Drive. Use a regular expression to get the ID from the URL.
+  var folderUrl = data[0][10];
+  var folder = DriveApp.getFolderById(folderUrl.match(/[-\w]{25,}/));
+
+  Logger.log(data[0][1]);
+  Logger.log(data[0][10]);
+  Logger.log(folder);
+
+  //All variables needed for the title of the new files. SHOULD BE IN AN ARRAY or OBJECT. Janky code
+  var year = new Date().getFullYear();
+  var mon = new Date();
+  var month = Utilities.formatDate(mon, Session.getTimeZone(), "MMM");
+  var date = month + year;
+  var lang = data[0][7];
+  var contact = data[0][5];
+  var schoolName = data[0][2];
+  var coord = data[0][9];
+  var consultant = data[0][1];
+  
+  Logger.log(folder);
+  Logger.log(date);
+  Logger.log(month);
+  Logger.log(year);
+  Logger.log(lang);
+
+
+  // Make a copy of a decoy sheet, setting same name with school and date, copy being created in the destination folder signaled.
+  if (lang == "Inglés") {
+    var newSheetEnglish = DriveApp.getFileById('1EaY9fQ3BFn2p85JnNudsjLLctCd6veghZrrEXHq2jsE').makeCopy("V5 Initial Evauation_" + schoolName + "_" + date, folder);
+    var newSheetEnglishId = newSheetEnglish.getId();
+    var newSheetEnglishUrl = newSheetEnglish.getUrl(); 
+    var newFormEnglishUrl = SpreadsheetApp.openById(newSheetEnglishId).getFormUrl();
+    var newFormEnglishId = "";
+    for (var i=32; i<76; i++){
+      newFormEnglishId = newFormEnglishId + newFormEnglishUrl[i];
+    }
+    Logger.log(newFormEnglishId);
+    DriveApp.getFileById(newFormEnglishId).moveTo(folder).setName("V5 Initial Evaluation_" + schoolName + "_" + date);
+
+    //Declare email as an object
+    var message = {
+    to: consultant,
+    subject: "Evaluación previa " + schoolName,
+    htmlBody: "Buenos días " + consultant + '<br />' + '<br />' +
+    "Aquí tienes el enlace al " + '<a href=\"' + newFormEnglishUrl + '">formulario</a>' + " que deben rellenar los profesores. En el caso de que esta Evaluación Previa sea para varios centros, es muy importante que solicites a la persona coordinadora " + "(" + coord + ")" + " que modifique el formulario " + "<font color='red' strong>ANTES</font>" + " de compartir el formulario con el cliente." + '<br />' + '<br />' +
+    "Y aquí tienes el enlace a la " + '<a href=\"' + newSheetEnglishUrl + '">hoja de cálculo</a>' + " en la que se recogen las respuestas a dicho formulario." + '<br />' + '<br />' +
+    "También es importante que el cliente transmita a las personas que vayan a rellenar la evaluación previa el por qué lo están haciendo y que los usuarios entiendan qué están rellenando y para qué sirve." + '<br>' + '<br>' + 
+     "Cualquier duda que tuviéras escríbele a " + coord + "." + '<br>' + '<br>' + 
+    "Muchas gracias, "
+    };
+  
+  MailApp.sendEmail(message); 
+  }
+
+  else {
+    var newDocPorposal = DriveApp.getFileById('1x2PdSxkIJ_Xjira9I2EaA1CskYv0A7dSgWE3ag8ws8s').makeCopy("PROPUESTA FORMACIÓN_" + schoolName + "_" + date, folder);
+    var newSheetSpanish = DriveApp.getFileById('1tdoY2Yp0SrOXu_wNuBiVkGyXMv1gWvHVDkdEdBWcL8I').makeCopy("V6 Evaluación Previa_" + schoolName + "_" + date, folder);
+    var newSheetSpanishId = newSheetSpanish.getId();
+    var newSheetSpanishUrl = newSheetSpanish.getUrl();
+    var newFormSpanishUrl = SpreadsheetApp.openById(newSheetSpanishId).getFormUrl();
+    var newFormSpanishId = "";
+    for (var i=32; i<76; i++){
+      newFormSpanishId = newFormSpanishId + newFormSpanishUrl[i];
+    }
+    Logger.log(newFormSpanishId);
+    DriveApp.getFileById(newFormSpanishId).moveTo(folder).setName("V6 Evaluación Previa_" + schoolName + "_" + date);
+
+    var message = {
+    to: consultant,
+    subject: "Evaluación previa " + schoolName,
+    htmlBody: "Buenos días " + consultant + '<br />' + '<br />' +
+    "Aquí tienes el enlace al " + '<a href=\"' + newFormSpanishUrl + '">formulario</a>' + " que deben rellenar los profesores. En el caso de que esta Evaluación Previa sea para varios centros, es muy importante que solicites a la persona coordinadora " + "(" + coord + ")" + " que modifique el formulario " + "<font color='red' strong>ANTES</font>" + " de compartir el formulario con el cliente." + '<br />' + '<br />' +
+    "Y aquí tienes el enlace a la " + '<a href=\"' + newSheetSpanishUrl + '">hoja de cálculo</a>' + " en la que se recogen las respuestas a dicho formulario." + '<br />' + '<br />' +
+    "También es importante que el cliente transmita a las personas que vayan a rellenar la evaluación previa el por qué lo están haciendo y que los usuarios entiendan qué están rellenando y para qué sirve." + '<br>' + '<br>' + 
+     "Cualquier duda que tuviéras escríbele a " + coord + "." + '<br>' + '<br>' + 
+    "Muchas gracias, "
+    };
+  
+  MailApp.sendEmail(message); 
+
+  //ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Respuestas de formulario 1');
+  }
+  //var newSheetId = newSheet.getId();
+  //newFormOpen.setDestination(FormApp.DestinationType.SPREADSHEET, newSheet.getId());  
+  //Logger.log(newSheetId);
+
+  Logger.log(folderUrl);
+  Logger.log(lang);
+  Logger.log(contact);
+  Logger.log(schoolName);
+  Logger.log(coord);
+  
+}
+
+function testLastRow() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Respuestas de formulario 1');
+  var lastRow = ss.getLastRow();
+  var data = ss.getRange(lastRow,1,lastRow,11).getValues();
+  var folderUrl = data[0][10];
+  //var folder = DriveApp.getFolderById(folderUrl.replace(/^.+\//, ''));
+  var folder = DriveApp.getFolderById(folderUrl.match(/[-\w]{25,}/));
+
+  Logger.log(data[0][1]);
+  Logger.log(data[0][10]);
+  Logger.log(folder);
+  
+  var year = new Date().getFullYear();
+  var mon = new Date();
+  var month = Utilities.formatDate(mon, Session.getTimeZone(), "MMM");
+  var date = month + year;
+  var lang = data[0][7];
+  var contact = data[0][5];
+  var schoolName = data[0][2];
+  var coord = data[0][9];
+  var consultant = data[0][1];
+  
+  Logger.log(folder);
+  Logger.log(date);
+  Logger.log(month);
+  Logger.log(year);
+  Logger.log(lang);
+
+  // Make a copy of a decoy sheet, setting same name with school and date, copy being created in the destination folder signaled.
+  if (lang == "Inglés") {
+    var newSheetEnglish = DriveApp.getFileById('1EaY9fQ3BFn2p85JnNudsjLLctCd6veghZrrEXHq2jsE').makeCopy("V5 Initial Evauation_" + schoolName + "_" + date, folder);
+    var newSheetEnglishId = newSheetEnglish.getId();
+    var newSheetEnglishUrl = newSheetEnglish.getUrl(); 
+    var newFormEnglishUrl = SpreadsheetApp.openById(newSheetEnglishId).getFormUrl();
+    var newFormEnglishId = "";
+    for (var i=32; i<76; i++){
+      newFormEnglishId = newFormEnglishId + newFormEnglishUrl[i];
+    }
+    Logger.log(newFormEnglishId);
+    DriveApp.getFileById(newFormEnglishId).moveTo(folder).setName("V5 Initial Evaluation_" + schoolName + "_" + date);
+
+    var message = {
+    to: consultant,
+    subject: "Evaluación previa " + schoolName,
+    htmlBody: "Buenos días " + consultant + '<br />' + '<br />' +
+    "Aquí tienes el enlace al " + '<a href=\"' + newFormEnglishUrl + '">formulario</a>' + " que deben rellenar los profesores. En el caso de que esta Evaluación Previa sea para varios centros, es muy importante que solicites a la persona coordinadora " + "(" + coord + ")" + " que modifique el formulario " + "<font color='red' strong>ANTES</font>" + " de compartir el formulario con el cliente." + '<br />' + '<br />' +
+    "Y aquí tienes el enlace a la " + '<a href=\"' + newSheetEnglishUrl + '">hoja de cálculo</a>' + " en la que se recogen las respuestas a dicho formulario." + '<br />' + '<br />' +
+    "También es importante que el cliente transmita a las personas que vayan a rellenar la evaluación previa el por qué lo están haciendo y que los usuarios entiendan qué están rellenando y para qué sirve." + '<br>' + '<br>' + 
+     "Cualquier duda que tuviéras escríbele a " + coord + "." + '<br>' + '<br>' + 
+    "Muchas gracias, "
+    };
+  
+  
+  MailApp.sendEmail(message); 
+  }
+
+  else {
+    var newDocPorposal = DriveApp.getFileById('1x2PdSxkIJ_Xjira9I2EaA1CskYv0A7dSgWE3ag8ws8s').makeCopy("PROPUESTA FORMACIÓN" + schoolName + "_" + date, folder);
+    var newSheetSpanish = DriveApp.getFileById('1tdoY2Yp0SrOXu_wNuBiVkGyXMv1gWvHVDkdEdBWcL8I').makeCopy("V6 Evaluación Previa_" + schoolName + "_" + date, folder);
+    var newSheetSpanishId = newSheetSpanish.getId();
+    var newSheetSpanishUrl = newSheetSpanish.getUrl();
+    var newFormSpanishUrl = SpreadsheetApp.openById(newSheetSpanishId).getFormUrl();
+    var newFormSpanishId = "";
+    for (var i=32; i<76; i++){
+      newFormSpanishId = newFormSpanishId + newFormSpanishUrl[i];
+    }
+    Logger.log(newFormSpanishId);
+    DriveApp.getFileById(newFormSpanishId).moveTo(folder).setName("V6 Evaluación Previa_" + schoolName + "_" + date);
+
+    var message = {
+    to: consultant,
+    subject: "Evaluación previa " + schoolName,
+    htmlBody: "Buenos días " + consultant + '<br />' + '<br />' +
+    "Aquí tienes el enlace al " + '<a href=\"' + newFormSpanishUrl + '">formulario</a>' + " que deben rellenar los profesores. En el caso de que esta Evaluación Previa sea para varios centros, es muy importante que solicites a la persona coordinadora " + "(" + coord + ")" + " que modifique el formulario " + "<font color='red' strong>ANTES</font>" + " de compartir el formulario con el cliente." + '<br />' + '<br />' +
+    "Y aquí tienes el enlace a la " + '<a href=\"' + newSheetSpanishUrl + '">hoja de cálculo</a>' + " en la que se recogen las respuestas a dicho formulario." + '<br />' + '<br />' +
+    "También es importante que el cliente transmita a las personas que vayan a rellenar la evaluación previa el por qué lo están haciendo y que los usuarios entiendan qué están rellenando y para qué sirve." + '<br>' + '<br>' + 
+     "Cualquier duda que tuviéras escríbele a " + coord + "." + '<br>' + '<br>' + 
+    "Muchas gracias, "
+    };
+  
+  Logger.log(message);
+
+  //MailApp.sendEmail(message); 
+
+  }
+
+  Logger.log(folderUrl);
+  Logger.log(lang);
+  Logger.log(contact);
+  Logger.log(schoolName);
+  Logger.log(coord);
+
+}
