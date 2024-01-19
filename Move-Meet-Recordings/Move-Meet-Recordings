@@ -1,1 +1,516 @@
+//Para poner correr los scripts en diferentes momentos del día, hay una función para cada universidad (Nacional, Bogotá; Valledupar, Pereira). Las 4 funciones son iguales simplemente agarran la información de una hoja u otra.
 
+//La Hoja de Cálculo recoge los datos de los profesores en la hoja de respuestas del formulario y luego se filtran en diferentes hojas por universidad en cada hoja suya con la fórmula de =QUERY()
+
+//En Drive tenemos una Unidad Compartida llamada "Meet Recordings Global" que contiene la Hoja de Cálculo, el Formulario y el Diagrama de Flujo
+
+//En "Meet Recordings Global" a su vez hay una carpeta de cada sede donde, a su vez, habrá una carpeta para cada profesor de esa universidad.
+
+
+function recordingsNacional() {
+
+  // Variables generales que son el Archivo entero (ss), la hoja de Nacional (ssNacional), el array de todas las filas y columnas que contengan datos (nacionalData) y la Carpeta de "Nacional" en la Unidad Compartida de Drive
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ssNacional = ss.getSheetByName('Nacional');
+  var nacionalData = ssNacional.getDataRange().getValues();
+  var folderNacional = DriveApp.getFolderById('1oMW5aJmC6loEIBP55BQBXMyjuv4Jenm9');
+
+  //Se declara un String para posteriormente alimentarlo con la ID de la carpeta nueva de cada profesor cuando se crea
+  var tempProfesorFolderDestId = '';
+
+  //Se declara una variable que será el contador para iterar sobre las filas de la Hoja de Nacional. Después empieza la iteración en 1, que supone la segunda fila de la hoja
+  var i = 1;
+
+  while (i < nacionalData.length) {
+
+    //Condicional que comprueba si la 2º columna está vacía, y si lo es, para el bucle. Esto es necesario porque al tener la palabra "NO" en todas las filas en la Columna H, nacionalData.length equivale a 1000, independientemente de si realmente hay profesores en dichas filas o no. Digamos que es una protección.
+    if (nacionalData[i][1] != "Nacional") {
+      break;
+    }
+
+    //Condicional que detecta si el profesor indicado en la fila tiene ya una carpeta de destino creado (columna H). Si la celda de esta columna está vacía, entonces les crea una carpeta titulada "Nacional_nombre_apellidos" dentro de la carpeta de Nacional en la Unidad Compartida. Finalmente Añade el enlace (URL) de la nueva carpeta a la Columna H en la hoja y guardamos dicha carpeta como nueva variable para más adelante en el Script
+    if (nacionalData[i][7] == "NO") {
+      tempProfesorFolderDestId = folderNacional.createFolder('Nacional_' + nacionalData[i][2] + '_' + nacionalData[i][3]).getId();
+      ssNacional.getRange(i + 1, 8).setValue(DriveApp.getFolderById(tempProfesorFolderDestId).getUrl());
+      var tempFolderProfesorDest = DriveApp.getFolderById(tempProfesorFolderDestId);
+    }
+
+    //Segunda parte de la Condicional que si detecta que el profesor en la fila ya tiene carpeta creada, pues simplemente coge la ID de la URL en la caleda de la Columna H con una expresión regular. Finalmente guarda esa carpeta en otra variable para más adelante en el script
+    else if (nacionalData[i][7] != "NO") {
+      tempProfesorFolderDestId = nacionalData[i][7].match(/[-\w]{25,}/);
+      var tempFolderProfesorDest = DriveApp.getFolderById(tempProfesorFolderDestId);
+    }
+
+    //Cogemos la carpeta de origen de las grabaciones, que es la de "Meet Recordings" del profesor de la fila EN SU DRIVE. Cogemos la ID de esa carpeta de la URL que compartió en el Formulario con la misma expresión regular de antes
+    var folderSource = DriveApp.getFolderById(nacionalData[i][4].match(/[-\w]{25,}/));
+    
+    //Entramos en la carpeta personal de "Meet Recordings" del profesor de la fila y agarramos TODOS los archivos del tipo "Video/mp4" que hay. Después iteramos sobre todos ellos para saber cuántos vídeos hay en la carpeta en este momento  
+    var recordingsTemp = folderSource.getFilesByType('Video/mp4');
+    var tempTotalVids = 0;
+    while (recordingsTemp.hasNext()) {
+      recordingsTemp.next();
+      tempTotalVids++;
+    }
+
+    //Condicional para comprobar si hay columnas suficientes en la Hoja para añadir un enlace a cada v´dieo que se vaya a mover. En caso de que no hay columnas suficientes, se añade cuantas Columnas necesarias. Una Hoja de Cálculo puede tener hasta 18.287 columnas y 40.000 filas, o un total de 10 millones de celdas
+    if (nacionalData[i].filter(String).length + tempTotalVids >= ssNacional.getMaxColumns()) {
+      var dif = (nacionalData[i].filter(String).length + tempTotalVids) - ssNacional.getMaxColumns();
+      var j = 0;
+      while (j <= dif) {
+        ssNacional.insertColumnAfter(ssNacional.getMaxColumns());
+        j++;
+      }
+    }
+
+    //Se vuelve a entrar en la carpeta personal de "Meet Recordings" del profesor de la fila y agarramos de nuevo TODOS los archivos del tipo "Video/mp4" que hay. Declaramos un contador de vídeos que irá subiendo según iteremos sobre ellos.
+    var recordingsTemp = folderSource.getFilesByType('Video/mp4');
+    var tempVidCount = 0;
+
+    //Indicamos que mientras hay un "siguiente vídeo" entre este objeto de TODOS LOS VIDEOS que hay, pues vamos a hacer algo. Cuando ya no haya un siguiente vídeo, se para el bucle
+    while (recordingsTemp.hasNext()){
+      var recordingTemp = recordingsTemp.next();
+
+      //Usamos el método de "TRY / CATCH" ya que si el profesor no ha dado permiso de edición a "innovaaudiovisual@areandina.edu.co" adecuadamente sobre su carpeta de "Meet Recordings", que no pare el script. Digamos que es un flitro, para ver si va a funcionar o no, y si detecta que no va a funcionar, pues hace otra cosa
+      try {
+        
+        //Intenta mover el archivo (la grabación de turno) a su nueva carpeta. Luego crea un hipervínculo en el que el texto será en nombre (t´titulo) del archivo y le enlace su URL. Ester hipervínculo está añadido a siguiente celda vacía en la fila del profesor en cuestión        
+        recordingTemp.moveTo(tempFolderProfesorDest);
+        var hyperLink = SpreadsheetApp.newRichTextValue().setText(recordingTemp.getName()).setLinkUrl(recordingTemp.getUrl()).build();
+        ssNacional.getRange(i + 1, nacionalData[i].filter(String).length + (tempVidCount + 1)).setRichTextValue(hyperLink);
+
+      //Si detecta que no se puede mover el archivo, manda un correo a "innovaaudiovisual@areandina.edu.co" indicando el texto que hay como htmlBody. Indica el correo del profesor en cuestión y la universidad donde trabaja
+      } catch {
+        Logger.log("NO PERMISSION");
+        var mailCatch = {
+          to: 'michaelthomas.bennett@ieducando.com, innovaaudiovisual@areandina.edu.co',
+          subject: "No se puede mover las Grabaciones de Meet",
+          htmlBody: "Hola," + '<br/>' + '<br/>' + 
+          "No se ha podido mover los vídeos de " + nacionalData[i][6] + " de la universidad en " + nacionalData[i][1] + " debido probablamente a que no haya compartido correctamente su carpeta de grabaciones con la cuenta de innovaaudiovisual@areandina.edu.co"
+        }
+
+        //Manda el correo justo arriba y rompe este bucle (iterar sobre los vídeos) para directamente pasar a la siguiente fila de la Hoja (siguiente profesor)
+        MailApp.sendEmail(mailCatch);
+        break;
+      }
+
+      //En caso de haber podido mover el archivo, sigue el bucle, pero antes cuenta añade 1 al conteo de vídeos      
+      tempVidCount++;
+    }
+
+    //Al terminar el bucle de iteración de vídeos de un profesor, compruba si se ha movido al menos 1 vídeo. En ese caso, manda un correo a "innovaaudiovisual@areandina.edu.co" indicando cuántos vídeos se han movida del profesor en cuestión, indicando a su vez su correo electrónico, la universidad donde trabaja y facilita un enlace a la carpeta nueva con los archivos ya movidos
+    if (tempVidCount > 0) {
+
+      var mailConfirm = {
+        to: 'michaelthomas.bennett@ieducando.com, innovaaudiovisual@areandina.edu.co',
+        subject: "Se han movido Grabaciones de Meet",
+        htmlBody: "Hola," + '<br/>' + '<br/>' + 
+        "Se ha podido mover los " + tempVidCount + " vídeos de " + nacionalData[i][6] + " de la universidad en " + nacionalData[i][1] + " a la Unidad Compartida con la siguiente url: " + '<br/>' + '<br/>' + '<a href=' + DriveApp.getFolderById(tempProfesorFolderDestId).getUrl() + '>enlace a la carpeta</a>' + '<br>' + '<br>' 
+      }
+
+      MailApp.sendEmail(mailConfirm); 
+    }
+
+    //El Contador para las iteraciones sobre las filas se sube por 1 para ya pasar a la siguiente fila de la Hoja (siguiente profesor). Se repite todo lo anterior con la siguiente fila. Cuando este contador (i) es igual al número de filas que hay, se para el bucle
+    i++;
+  }
+
+}
+
+function recordingsBogota() {
+
+  // Variables generales que son el Archivo entero (ss), la hoja de Bogotá (ssBogotá), el array de todas las filas y columnas que contengan datos (bogotaData) y la Carpeta de "Bogotá" en la Unidad Compartida de Drive
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ssBogota = ss.getSheetByName('Bogotá');
+  var bogotaData = ssBogota.getDataRange().getValues();
+  var folderBogota = DriveApp.getFolderById('1_ZPbstXdDRgR9S2ieZHicyEgTCfjlStC');
+
+  //Se declara un String para posteriormente alimentarlo con la ID de la carpeta nueva de cada profesor cuando se crea
+  var tempProfesorFolderDestId = '';
+
+  //Se declara una variable que será el contador para iterar sobre las filas de la Hoja de Bogotá. Después empieza la iteración en 1, que supone la segunda fila de la hoja
+  var i = 1;
+
+  while (i < bogotaData.length) {
+
+    //Condicional que comprueba si la 2º columna está vacía, y si lo es, para el bucle. Esto es necesario porque al tener la palabra "NO" en todas las filas en la Columna H, bogotáData.length equivale a 1000, independientemente de si realmente hay profesores en dichas filas o no. Digamos que es una protección.
+    if (bogotaData[i][1] != "Bogotá") {
+      break;
+    }
+
+    //Cogemos la carpeta de origen de las grabaciones, que es la de "Meet Recordings" del profesor de la fila EN SU DRIVE. Cogemos la ID de esa carpeta de la URL que compartió en el Formulario con la misma expresión regular de antes
+    var folderSource = DriveApp.getFolderById(bogotaData[i][4].match(/[-\w]{25,}/));
+    
+    //Entramos en la carpeta personal de "Meet Recordings" del profesor de la fila y agarramos TODOS los archivos del tipo "Video/mp4" que hay. Después iteramos sobre todos ellos para saber cuántos vídeos hay en la carpeta en este momento  
+    var recordingsTemp = folderSource.getFilesByType('Video/mp4');
+    var tempTotalVids = 0;
+    while (recordingsTemp.hasNext()) {
+      var recordingTemp = recordingsTemp.next();
+      if (recordingTemp.getName().match(/^CLASE/) == "CLASE") {
+        tempTotalVids++;
+      }
+    }
+
+    Logger.log(tempTotalVids + " videos found beginning with CLASE in " + bogotaData[i][2] + "'s folder");
+
+    //Condicional para comprobar si hay columnas suficientes en la Hoja para añadir un enlace a cada v´dieo que se vaya a mover. En caso de que no hay columnas suficientes, se añade cuantas Columnas necesarias. Una Hoja de Cálculo puede tener hasta 18.287 columnas y 40.000 filas, o un total de 10 millones de celdas
+    if (bogotaData[i].filter(String).length + tempTotalVids >= ssBogota.getMaxColumns()) {
+      var dif = (bogotaData[i].filter(String).length + tempTotalVids) - ssBogota.getMaxColumns();
+      var j = 0;
+      while (j <= dif) {
+        ssBogota.insertColumnAfter(ssBogota.getMaxColumns());
+        j++;
+      }
+    }
+
+    //Se vuelve a entrar en la carpeta personal de "Meet Recordings" del profesor de la fila y agarramos de nuevo TODOS los archivos del tipo "Video/mp4" que hay. Declaramos un contador de vídeos que irá subiendo según iteremos sobre ellos.
+    var recordingsTemp = folderSource.getFilesByType('Video/mp4');
+    var tempVidCount = 0;
+
+    //Indicamos que mientras hay un "siguiente vídeo" entre este objeto de TODOS LOS VIDEOS que hay, pues vamos a hacer algo. Cuando ya no haya un siguiente vídeo, se para el bucle
+    while (recordingsTemp.hasNext()){
+      var recordingTemp = recordingsTemp.next();
+
+      //Condicional que comprueba que el video en cuestión empieza por "CLASE", y en ese caso lo intenta mover
+      if (recordingTemp.getName().match(/^CLASE/) == "CLASE") {
+        //Usamos el método de "TRY / CATCH" ya que si el profesor no ha dado permiso de edición a "innovaaudiovisual@areandina.edu.co" adecuadamente sobre su carpeta de "MEet Recordings", que no pare el script. Digamos que es un flitro, para ver si va a funcionar o no, y si detecta que no va a funcionar, pues hace otra cosa
+        try {
+
+          //Condicional que detecta si el profesor indicado en la fila tiene ya una carpeta de destino creado (columna H). Si la celda de esta columna está vacía, entonces les crea una carpeta titulada "Bogotá_"nombre" dentro de la carpeta de Bogotá en la Unidad Compartida. Finalmente Añade el enlace (URL) de la nueva carpeta a la Columna H en la hoja y guardamos dicha carpeta como nueva variable para más adelante en el Script
+          if (bogotaData[i][7] == "NO") {
+            tempProfesorFolderDestId = folderBogota.createFolder('Bogota_' + bogotaData[i][2] + '_' + bogotaData[i][3]).getId();
+            ssBogota.getRange(i + 1, 8).setValue(DriveApp.getFolderById(tempProfesorFolderDestId).getUrl());
+            var tempFolderProfesorDest = DriveApp.getFolderById(tempProfesorFolderDestId);
+          }
+
+          //Segunda parte de la Condicional que si detecta que el profesor en la fila ya tiene carpeta creada, pues simplemente coge la ID de la URL en la caleda de la Columna H con una expresión regular. Finalmente guarda esa carpeta en otra variable para más adelante en el script
+          else if (bogotaData[i][7] != "NO") {
+          tempProfesorFolderDestId = bogotaData[i][7].match(/[-\w]{25,}/);
+            var tempFolderProfesorDest = DriveApp.getFolderById(tempProfesorFolderDestId);
+          }
+
+          //Intenta mover el archivo (la grabación de turno) a su nueva carpeta. Luego crea un hipervínculo en el que el texto será en nombre (t´titulo) del archivo y le enlace su URL. Ester hipervínculo está añadido a siguiente celda vacía en la fila del profesor en cuestión        
+          recordingTemp.moveTo(tempFolderProfesorDest);
+          var hyperLink = SpreadsheetApp.newRichTextValue().setText(recordingTemp.getName()).setLinkUrl(recordingTemp.getUrl()).build();
+          ssBogota.getRange(i + 1, bogotaData[i].filter(String).length + (tempVidCount + 1)).setRichTextValue(hyperLink);
+      
+          //En caso de haber podido mover el archivo, sigue el bucle, pero antes cuenta añade 1 al conteo de vídeos      
+          tempVidCount++;
+        //Si detecta que no se puede mover el archivo, manda un correo a "innovaaudiovisual@areandina.edu.co" indicando el texto que hay como htmlBody. Indica el correo del profesor en cuestión y la universidad donde trabaja
+        } catch {
+          Logger.log("NO PERMISSION");
+          var mailCatch = {
+            to: 'michaelthomas.bennett@ieducando.com, innovaaudiovisual@areandina.edu.co',
+            subject: "No se puede mover las Grabaciones de Meet",
+            htmlBody: "Hola Cesar," + '<br/>' + '<br/>' + 
+            "No se ha podido mover los vídeos de " + bogotaData[i][6] + " de la universidad en " + bogotaData[i][1] + " debido probablamente a que no haya compartido correctamente su carpeta de grabaciones con la cuenta de innovaaudiovisual@areandina.edu.co"
+          }
+
+          ssBogota.getRange(i, 1, i, ssBogota.getLastColumn()).setBackground("red");
+          //Manda el correo justo arriba y rompe este bucle (iterar sobre los vídeos) para directamente pasar a la siguiente fila de la Hoja (siguiente profesor)
+          MailApp.sendEmail(mailCatch);
+          break;
+        }
+      }
+    }
+
+    //Al terminar el bucle de iteración de vídeos de un profesor, compruba si se ha movido al menos 1 vídeo. En ese caso, manda un correo a "innovaaudiovisual@areandina.edu.co" indicando cuántos vídeos se han movida del profesor en cuestión, indicando a su vez su correo electrónico, la universidad donde trabaja y facilita un enlace a la carpeta nueva con los archivos ya movidos
+    if (tempVidCount > 0) {
+
+    var mailConfirm = {
+      to: 'michaelthomas.bennett@ieducando.com, innovaaudiovisual@areandina.edu.co',
+      subject: "Se han movido Grabaciones de Meet",
+      htmlBody: "Hola," + '<br/>' + '<br/>' + 
+      "Se ha podido mover los " + tempVidCount + " vídeos de " + bogotaData[i][6] + " de la universidad en " + bogotaData[i][1] + " a la Unidad Compartida con la siguiente url: " + '<br/>' + '<br/>' + '<a href=' + DriveApp.getFolderById(tempProfesorFolderDestId).getUrl() + '>enlace a la carpeta</a>' + '<br>' + '<br>' 
+    }
+
+    MailApp.sendEmail(mailConfirm);
+    
+    }
+
+    //El Contador para las iteraciones sobre las filas se sube por 1 para ya pasar a la siguiente fila de la Hoja (siguiente profesor). Se repite todo lo anterior con la siguiente fila. Cuando este contador (i) es igual al número de filas que hay, se para el bucle
+    i++;
+  }
+  
+}
+
+function recordingsValledupar() {
+
+  // Variables generales que son el Archivo entero (ss), la hoja de Valledupar (ssValle), el array de todas las filas y columnas que contengan datos (valleData) y la Carpeta de "Valledupar" en la Unidad Compartida de Drive
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ssValle = ss.getSheetByName('Valledupar');
+  var valleData = ssValle.getDataRange().getValues();
+  var folderValledupar = DriveApp.getFolderById('1SjseD7LqnZ2WHjiWETb2XIr6w7zBPY5Z');
+
+  //Se declara un String para posteriormente alimentarlo con la ID de la carpeta nueva de cada profesor cuando se crea
+  var tempProfesorFolderDestId = '';
+
+  //Se declara una variable que será el contador para iterar sobre las filas de la Hoja de Valledupar. Después empieza la iteración en 1, que supone la segunda fila de la hoja
+  var i = 1;
+
+  while (i < valleData.length) {
+
+    //Condicional que comprueba si la 2º columna está vacía, y si lo es, para el bucle. Esto es necesario porque al tener la palabra "NO" en todas las filas en la Columna H, valleData.length equivale a 1000, independientemente de si realmente hay profesores en dichas filas o no. Digamos que es una protección.
+    if (valleData[i][1] != "Valledupar") {
+      break;
+    }
+
+    //Condicional que detecta si el profesor indicado en la fila tiene ya una carpeta de destino creado (columna H). Si la celda de esta columna está vacía, entonces les crea una carpeta titulada "Valledupar_nombre_apellidos" dentro de la carpeta de Valledupar en la Unidad Compartida. Finalmente Añade el enlace (URL) de la nueva carpeta a la Columna H en la hoja y guardamos dicha carpeta como nueva variable para más adelante en el Script
+    if (valleData[i][7] == "NO") {
+      tempProfesorFolderDestId = folderValledupar.createFolder('Valledupar_' + valleData[i][2] + '_' + valleData[i][3]).getId();
+      ssValle.getRange(i + 1, 8).setValue(DriveApp.getFolderById(tempProfesorFolderDestId).getUrl());
+      var tempFolderProfesorDest = DriveApp.getFolderById(tempProfesorFolderDestId);
+    }
+
+    //Segunda parte de la Condicional que si detecta que el profesor en la fila ya tiene carpeta creada, pues simplemente coge la ID de la URL en la caleda de la Columna H con una expresión regular. Finalmente guarda esa carpeta en otra variable para más adelante en el script
+    else if (valleData[i][7] != "NO") {
+      tempProfesorFolderDestId = valleData[i][7].match(/[-\w]{25,}/);
+      var tempFolderProfesorDest = DriveApp.getFolderById(tempProfesorFolderDestId);
+    }
+
+    //Cogemos la carpeta de origen de las grabaciones, que es la de "Meet Recordings" del profesor de la fila EN SU DRIVE. Cogemos la ID de esa carpeta de la URL que compartió en el Formulario con la misma expresión regular de antes
+    var folderSource = DriveApp.getFolderById(valleData[i][4].match(/[-\w]{25,}/));
+    
+    //Entramos en la carpeta personal de "Meet Recordings" del profesor de la fila y agarramos TODOS los archivos del tipo "Video/mp4" que hay. Después iteramos sobre todos ellos para saber cuántos vídeos hay en la carpeta en este momento  
+    var recordingsTemp = folderSource.getFilesByType('Video/mp4');
+    var tempTotalVids = 0;
+    while (recordingsTemp.hasNext()) {
+      recordingsTemp.next();
+      tempTotalVids++;
+    }
+
+    //Condicional para comprobar si hay columnas suficientes en la Hoja para añadir un enlace a cada v´dieo que se vaya a mover. En caso de que no hay columnas suficientes, se añade cuantas Columnas necesarias. Una Hoja de Cálculo puede tener hasta 18.287 columnas y 40.000 filas, o un total de 10 millones de celdas
+    if (valleData[i].filter(String).length + tempTotalVids >= ssValle.getMaxColumns()) {
+      var dif = (valleData[i].filter(String).length + tempTotalVids) - ssValle.getMaxColumns();
+      var j = 0;
+      while (j <= dif) {
+        ssValle.insertColumnAfter(ssValle.getMaxColumns());
+        j++;
+      }
+    }
+
+    //Se vuelve a entrar en la carpeta personal de "Meet Recordings" del profesor de la fila y agarramos de nuevo TODOS los archivos del tipo "Video/mp4" que hay. Declaramos un contador de vídeos que irá subiendo según iteremos sobre ellos.
+    var recordingsTemp = folderSource.getFilesByType('Video/mp4');
+    var tempVidCount = 0;
+
+    //Indicamos que mientras hay un "siguiente vídeo" entre este objeto de TODOS LOS VIDEOS que hay, pues vamos a hacer algo. Cuando ya no haya un siguiente vídeo, se para el bucle
+    while (recordingsTemp.hasNext()){
+      var recordingTemp = recordingsTemp.next();
+
+      //Usamos el método de "TRY / CATCH" ya que si el profesor no ha dado permiso de edición a "innovaaudiovisual@areandina.edu.co" adecuadamente sobre su carpeta de "Meet Recordings", que no pare el script. Digamos que es un flitro, para ver si va a funcionar o no, y si detecta que no va a funcionar, pues hace otra cosa
+      try {
+        
+        //Intenta mover el archivo (la grabación de turno) a su nueva carpeta. Luego crea un hipervínculo en el que el texto será en nombre (t´titulo) del archivo y le enlace su URL. Ester hipervínculo está añadido a siguiente celda vacía en la fila del profesor en cuestión        
+        recordingTemp.moveTo(tempFolderProfesorDest);
+        var hyperLink = SpreadsheetApp.newRichTextValue().setText(recordingTemp.getName()).setLinkUrl(recordingTemp.getUrl()).build();
+        ssValle.getRange(i + 1, valleData[i].filter(String).length + (tempVidCount + 1)).setRichTextValue(hyperLink);
+
+      //Si detecta que no se puede mover el archivo, manda un correo a "innovaaudiovisual@areandina.edu.co" indicando el texto que hay como htmlBody. Indica el correo del profesor en cuestión y la universidad donde trabaja
+      } catch {
+        Logger.log("NO PERMISSION");
+        var mailCatch = {
+          to: 'michaelthomas.bennett@ieducando.com, innovaaudiovisual@areandina.edu.co',
+          subject: "No se puede mover las Grabaciones de Meet",
+          htmlBody: "Hola," + '<br/>' + '<br/>' + 
+          "No se ha podido mover los vídeos de " + valleData[i][6] + " de la universidad en " + valleData[i][1] + " debido probablamente a que no haya compartido correctamente su carpeta de grabaciones con la cuenta de innovaaudiovisual@areandina.edu.co"
+        }
+
+        //Manda el correo justo arriba y rompe este bucle (iterar sobre los vídeos) para directamente pasar a la siguiente fila de la Hoja (siguiente profesor)
+        MailApp.sendEmail(mailCatch);
+        break;
+      }
+
+      //En caso de haber podido mover el archivo, sigue el bucle, pero antes cuenta añade 1 al conteo de vídeos      
+      tempVidCount++;
+    }
+
+    //Al terminar el bucle de iteración de vídeos de un profesor, compruba si se ha movido al menos 1 vídeo. En ese caso, manda un correo a "innovaaudiovisual@areandina.edu.co" indicando cuántos vídeos se han movida del profesor en cuestión, indicando a su vez su correo electrónico, la universidad donde trabaja y facilita un enlace a la carpeta nueva con los archivos ya movidos
+    if (tempVidCount > 0) {
+
+      var mailConfirm = {
+        to: 'michaelthomas.bennett@ieducando.com, innovaaudiovisual@areandina.edu.co',
+        subject: "Se han movido Grabaciones de Meet",
+        htmlBody: "Hola," + '<br/>' + '<br/>' + 
+        "Se ha podido mover los " + tempVidCount + " vídeos de " + valleData[i][6] + " de la universidad en " + valleData[i][1] + " a la Unidad Compartida con la siguiente url: " + '<br/>' + '<br/>' + '<a href=' + DriveApp.getFolderById(tempProfesorFolderDestId).getUrl() + '>enlace a la carpeta</a>' + '<br>' + '<br>' 
+      }
+
+      MailApp.sendEmail(mailConfirm); 
+    }
+
+    //El Contador para las iteraciones sobre las filas se sube por 1 para ya pasar a la siguiente fila de la Hoja (siguiente profesor). Se repite todo lo anterior con la siguiente fila. Cuando este contador (i) es igual al número de filas que hay, se para el bucle
+    i++;
+  }
+}
+
+function recordingsPereira(ssCampus, folder) {
+
+  // Variables generales que son el Archivo entero (ss), la hoja de Pereira (ssPereira), el array de todas las filas y columnas que contengan datos (pereiraData) y la Carpeta de "Pereira" en la Unidad Compartida de Drive
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ssPereira = ss.getSheetByName('Pereira');
+  var pereiraData = ssPereira.getDataRange().getValues();
+  var folderPereira = DriveApp.getFolderById('1g28BGgsxIMfZz-rpydh439bLOulczoSw');
+
+  //Se declara un String para posteriormente alimentarlo con la ID de la carpeta nueva de cada profesor cuando se crea
+  var tempProfesorFolderDestId = '';
+
+  //Se declara una variable que será el contador para iterar sobre las filas de la Hoja de Pereira. Después empieza la iteración en 1, que supone la segunda fila de la hoja
+  var i = 1;
+
+  while (i < pereiraData.length) {
+
+    //Condicional que comprueba si la 2º columna está vacía, y si lo es, para el bucle. Esto es necesario porque al tener la palabra "NO" en todas las filas en la Columna H, pereiraData.length equivale a 1000, independientemente de si realmente hay profesores en dichas filas o no. Digamos que es una protección.
+    if (pereiraData[i][1] != "Pereira") {
+      break;
+    }
+
+    //Condicional que detecta si el profesor indicado en la fila tiene ya una carpeta de destino creado (columna H). Si la celda de esta columna está vacía, entonces les crea una carpeta titulada "Pereira_nombre_apellidos" dentro de la carpeta de Pereira en la Unidad Compartida. Finalmente Añade el enlace (URL) de la nueva carpeta a la Columna H en la hoja y guardamos dicha carpeta como nueva variable para más adelante en el Script
+    if (pereiraData[i][7] == "NO") {
+      tempProfesorFolderDestId = folderPereira.createFolder('Pereira_' + pereiraData[i][2] + '_' + pereiraData[i][3]).getId();
+      ssPereira.getRange(i + 1, 8).setValue(DriveApp.getFolderById(tempProfesorFolderDestId).getUrl());
+      var tempFolderProfesorDest = DriveApp.getFolderById(tempProfesorFolderDestId);
+    }
+
+    //Segunda parte de la Condicional que si detecta que el profesor en la fila ya tiene carpeta creada, pues simplemente coge la ID de la URL en la caleda de la Columna H con una expresión regular. Finalmente guarda esa carpeta en otra variable para más adelante en el script
+    else if (pereiraData[i][7] != "NO") {
+      tempProfesorFolderDestId = pereiraData[i][7].match(/[-\w]{25,}/);
+      var tempFolderProfesorDest = DriveApp.getFolderById(tempProfesorFolderDestId);
+    }
+
+    //Cogemos la carpeta de origen de las grabaciones, que es la de "Meet Recordings" del profesor de la fila EN SU DRIVE. Cogemos la ID de esa carpeta de la URL que compartió en el Formulario con la misma expresión regular de antes
+    var folderSource = DriveApp.getFolderById(pereiraData[i][4].match(/[-\w]{25,}/));
+    
+    //Entramos en la carpeta personal de "Meet Recordings" del profesor de la fila y agarramos TODOS los archivos del tipo "Video/mp4" que hay. Después iteramos sobre todos ellos para saber cuántos vídeos hay en la carpeta en este momento  
+    var recordingsTemp = folderSource.getFilesByType('Video/mp4');
+    var tempTotalVids = 0;
+    while (recordingsTemp.hasNext()) {
+      recordingsTemp.next();
+      tempTotalVids++;
+    }
+
+    //Condicional para comprobar si hay columnas suficientes en la Hoja para añadir un enlace a cada v´dieo que se vaya a mover. En caso de que no hay columnas suficientes, se añade cuantas Columnas necesarias. Una Hoja de Cálculo puede tener hasta 18.287 columnas y 40.000 filas, o un total de 10 millones de celdas
+    if (pereiraData[i].filter(String).length + tempTotalVids >= ssPereira.getMaxColumns()) {
+      var dif = (pereiraData[i].filter(String).length + tempTotalVids) - ssPereira.getMaxColumns();
+      var j = 0;
+      while (j <= dif) {
+        ssPereira.insertColumnAfter(ssPereira.getMaxColumns());
+        j++;
+      }
+    }
+
+    //Se vuelve a entrar en la carpeta personal de "Meet Recordings" del profesor de la fila y agarramos de nuevo TODOS los archivos del tipo "Video/mp4" que hay. Declaramos un contador de vídeos que irá subiendo según iteremos sobre ellos.
+    var recordingsTemp = folderSource.getFilesByType('Video/mp4');
+    var tempVidCount = 0;
+
+    //Indicamos que mientras hay un "siguiente vídeo" entre este objeto de TODOS LOS VIDEOS que hay, pues vamos a hacer algo. Cuando ya no haya un siguiente vídeo, se para el bucle
+    while (recordingsTemp.hasNext()){
+      var recordingTemp = recordingsTemp.next();
+
+      //Usamos el método de "TRY / CATCH" ya que si el profesor no ha dado permiso de edición a "innovaaudiovisual@areandina.edu.co" adecuadamente sobre su carpeta de "Meet Recordings", que no pare el script. Digamos que es un flitro, para ver si va a funcionar o no, y si detecta que no va a funcionar, pues hace otra cosa
+      try {
+        
+        //Intenta mover el archivo (la grabación de turno) a su nueva carpeta. Luego crea un hipervínculo en el que el texto será en nombre (t´titulo) del archivo y le enlace su URL. Ester hipervínculo está añadido a siguiente celda vacía en la fila del profesor en cuestión        
+        recordingTemp.moveTo(tempFolderProfesorDest);
+        var hyperLink = SpreadsheetApp.newRichTextValue().setText(recordingTemp.getName()).setLinkUrl(recordingTemp.getUrl()).build();
+        ssPereira.getRange(i + 1, pereiraData[i].filter(String).length + (tempVidCount + 1)).setRichTextValue(hyperLink);
+
+      //Si detecta que no se puede mover el archivo, manda un correo a "innovaaudiovisual@areandina.edu.co" indicando el texto que hay como htmlBody. Indica el correo del profesor en cuestión y la universidad donde trabaja
+      } catch {
+        Logger.log("NO PERMISSION");
+        var mailCatch = {
+          to: 'michaelthomas.bennett@ieducando.com, innovaaudiovisual@areandina.edu.co',
+          subject: "No se puede mover las Grabaciones de Meet",
+          htmlBody: "Hola," + '<br/>' + '<br/>' + 
+          "No se ha podido mover los vídeos de " + pereiraData[i][6] + " de la universidad en " + pereiraData[i][1] + " debido probablamente a que no haya compartido correctamente su carpeta de grabaciones con la cuenta de innovaaudiovisual@areandina.edu.co"
+        }
+
+        //Manda el correo justo arriba y rompe este bucle (iterar sobre los vídeos) para directamente pasar a la siguiente fila de la Hoja (siguiente profesor)
+        MailApp.sendEmail(mailCatch);
+        break;
+      }
+
+      //En caso de haber podido mover el archivo, sigue el bucle, pero antes cuenta añade 1 al conteo de vídeos      
+      tempVidCount++;
+    }
+
+    //Al terminar el bucle de iteración de vídeos de un profesor, compruba si se ha movido al menos 1 vídeo. En ese caso, manda un correo a "innovaaudiovisual@areandina.edu.co" indicando cuántos vídeos se han movida del profesor en cuestión, indicando a su vez su correo electrónico, la universidad donde trabaja y facilita un enlace a la carpeta nueva con los archivos ya movidos
+    if (tempVidCount > 0) {
+
+      var mailConfirm = {
+        to: 'michaelthomas.bennett@ieducando.com, innovaaudiovisual@areandina.edu.co',
+        subject: "Se han movido Grabaciones de Meet",
+        htmlBody: "Hola," + '<br/>' + '<br/>' + 
+        "Se ha podido mover los " + tempVidCount + " vídeos de " + pereiraData[i][6] + " de la universidad en " + pereiraData[i][1] + " a la Unidad Compartida con la siguiente url: " + '<br/>' + '<br/>' + '<a href=' + DriveApp.getFolderById(tempProfesorFolderDestId).getUrl() + '>enlace a la carpeta</a>' + '<br>' + '<br>' 
+      }
+
+      MailApp.sendEmail(mailConfirm); 
+    }
+
+    //El Contador para las iteraciones sobre las filas se sube por 1 para ya pasar a la siguiente fila de la Hoja (siguiente profesor). Se repite todo lo anterior con la siguiente fila. Cuando este contador (i) es igual al número de filas que hay, se para el bucle
+    i++;
+  }
+}
+
+
+function rowArray(){
+
+  var bogotaData = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bogotá').getDataRange().getValues();
+
+  Logger.log("bogotaData.length is -> " + bogotaData.length);
+
+  var i = 1;
+
+  var tempRecordings = DriveApp.getFolderById('1A4omRCH1hOQ7OgOEBBPIJEMMD9Gsljs_').getFilesByType('Video/mp4');
+
+  Logger.log(tempRecordings);
+  Logger.log("tempRcordings.length is -> " + tempRecordings.length);
+
+  while (i < bogotaData.length) {
+    
+    Logger.log("bogotaData[" + i + "].length is -> " + bogotaData[i].length);
+    Logger.log("max cols is -> " + SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bogotá').getMaxColumns());
+    Logger.log(bogotaData[i].filter(String));
+    Logger.log("bogotaData[" + i + "].filter(String).length is -> " + bogotaData[i].filter(String).length);
+
+    //Logger.log("LAst colum with data is -> " + bogotaData[i].getNextDataCell(SpreadsheetApp.Direction.NEXT).getColumn());
+
+    i++;
+  }
+  
+  /*
+  Logger.log(bogotaData[2]);
+  Logger.log(bogotaData[2].filter(String).length);
+
+  Logger.log(SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bogotá').getMaxColumns());
+
+  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bogotá').insertColumnAfter(SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bogotá').getMaxColumns());
+
+  Logger.log(SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Bogotá').getMaxColumns());
+
+  if (bogotaData[6].length + tempVidCount == ssBogota.getMaxColumns()) {
+          Logger.log("entered if and column added");
+          ssBogota.insertColumnAfter(ssBogota.getMaxColumns());
+  }
+  */
+}
+
+//Prueba función con expresión regular
+function getWithRegEx() {
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ssBogota = ss.getSheetByName('Bogotá');
+  var bogotaData = ssBogota.getDataRange().getValues();
+  var folderBogota = DriveApp.getFolderById('1_ZPbstXdDRgR9S2ieZHicyEgTCfjlStC');
+
+  var videos = DriveApp.getFilesByType('video/mp4');
+  var regEx = new RegExp("")
+
+
+  while (videos.hasNext()) {
+
+    var video = videos.next();
+    if (video.getName().match(/^CLASE/) == "CLASE") {
+      Logger.log("Video Found and name is -> " + video.getName());
+    }
+
+  }
+
+}
