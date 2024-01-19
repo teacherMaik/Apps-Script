@@ -1,3 +1,6 @@
+//Script Bound to Answer Sheet linked to Form
+
+//Function to get recipient email, retrieved from ieducando mailing list
 function getDest()
 {
   var ssDest = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('dest');
@@ -5,8 +8,9 @@ function getDest()
 
   var i = 0;
 
-  while (i < destData.length && destData[i][1] == 'sent')
+  while (i < destData.length && destData[i][1] == 'sent') {
     i++;
+  }
 
   Logger.log(destData[i][0]);
   // Set sent status to dest as sent
@@ -14,6 +18,7 @@ function getDest()
   return (destData[i][0]);
 }
 
+//function to send email
 function sendEmail()
 {
   var dest = getDest();
@@ -24,7 +29,8 @@ function sendEmail()
 
   var template = data[0][1];
   Logger.log(template);
-  
+
+//If statements to determine which template to use
   if (template == '"Mejor que mil días de estudio diligente es un día con un gran maestro."')
   {
     var imgGranDia = DriveApp.getFileById('1-rgjBmTMf78BkClybQ0uQB4nSBxdQAu2').getBlob().setName('imgGranDia');
