@@ -1,0 +1,114 @@
+function onOpen() {
+  DocumentApp.getUi().createMenu('Docs Exercises').addItem('Correct', 'checkDocs')
+    .addItem('Beginner Exercises', 'beginnerExercises')
+    .addToUi();
+}
+
+function beginnerExercises() {
+  
+}
+
+function checkDocs() {
+  const docs = DocumentApp.getActiveDocument();
+  const docsBody = docs.getBody();
+  let points = 0;
+
+  for (var i = 0; i < docsBody.getNumChildren(); i++) {
+
+    Logger.log(docsBody.getChild(i).getAttributes());
+    Logger.log(docsBody.getChild(i).getType());
+  }
+
+  // ex01
+  if (docsBody.getChild(1).asParagraph().getAlignment() == null) {
+    points++;
+    Logger.log("ex01 left + " + points);
+  }
+
+  // ex02
+  if (docsBody.getChild(2).asParagraph().getAlignment() == DocumentApp.HorizontalAlignment.CENTER) {
+    points++;
+    Logger.log("ex02 center + " + points);
+  }
+
+  // ex03
+  if (docsBody.getChild(3).asParagraph().getAlignment() == DocumentApp.HorizontalAlignment.RIGHT) {
+    points++;
+    Logger.log("ex03 right + " + points);
+  }
+
+  // ex04
+  if (docsBody.getChild(4).asParagraph().getAlignment() == DocumentApp.HorizontalAlignment.JUSTIFY) {
+    points++;
+    Logger.log("ex04 justified + " + points);
+  }
+
+  // ex05
+  if (docsBody.findText('Cambia esta línea de texto a negrita y cursiva.').getElement().asText().isBold() &&
+      docsBody.findText('Cambia esta línea de texto a negrita y cursiva.').getElement().asText().isItalic()) {
+    points++;
+    Logger.log("ex05 bold and cursive + " + points);
+  }
+  
+  // ex06
+  if (docsBody.findText('Subraya esta línea de texto.').getElement().asText().isUnderline()) {
+    points++;
+    Logger.log("ex06 underlined + " + points)
+  }
+
+  // ex07
+  if (docsBody.findText('Cambia el tamaño de la fuente de este texto a 16.').getElement().asText().getFontSize() == 16) {
+    points++;
+    Logger.log("ex07 font size 16 + " + points)
+  }
+
+  // ex08
+  if (docsBody.findText('Cambia la fuente de esta línea de texto a “Verdana”.').getElement().asText().getFontFamily() == 'Verdana') {
+    points++;
+    Logger.log("ex08 font verdana + " + points);
+  }
+  // ex09
+  if (docsBody.findText('Cambia el color de texto de esta línea a “azul”.').getElement().asText().getForegroundColor() == "#0000ff") {
+    points++;
+    Logger.log("ex09 blue + " + points);
+  }
+
+  // ex10
+  //Logger.log()
+  if (docsBody.findText('Cambia el color resaltado de esta línea a naranja.').getElement().asText().getBackgroundColor() == "#ff9900") {
+    points++;
+    Logger.log("ex10 orange background + " + points);
+  }
+
+  // ex11
+  var ex11List = docsBody.getListItems();
+  if (ex11List[0]) {
+
+    if (ex11List[0].getGlyphType() == 'NUMBER') {
+      points++;
+      Logger.log("ex11 numbered list + " + points);
+    }
+  }
+
+  // ex12
+  if (docsBody.getChild(16).asParagraph().getText() == 
+      'Corrige los errores de ortografía de esta línea de texto.') {
+    points++;
+    Logger.log("ex12 spelling + " + points);
+  }
+
+  // ex13
+  if (docsBody.getChild(17).asParagraph().getText() == 
+      'Elimina todos los espacios extra entre las palabras de esta línea de texto.') {
+    points++;
+    Logger.log("ex13 spaces + " + points);
+  }
+
+  // ex14
+  if (docsBody.getChild(18).asParagraph().getText() == 
+      'Pon todas las palabras en mayúscula o minúscula correctamente de esta línea.') {
+    points++;
+    Logger.log("ex14 capitals + " + points);
+  }
+  
+}
