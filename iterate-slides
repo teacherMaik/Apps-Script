@@ -1,0 +1,62 @@
+// Make a copy of this presentation to try out different methods and Log your results.
+// https://docs.google.com/presentation/d/1M935Rlmmc34RATZuDHvcMWiqY_qKG4pysf_RK2NguCY/copy
+
+function iterateSildes()
+{
+
+  // Declare and assign Slide URL. This can be done by copying and pasting the URL directlly or obtaining it from the Spreadsheet.
+  const slideUrl = '';
+
+  const presentation = SlidesApp.openByUrl(slideUrl);
+  const slides = presentation.getSlides();
+
+  Logger.log(slides);
+  Logger.log(typeof(slides));
+
+
+  Logger.log("Looping with a while and getting background type from each slide")
+  let i = 0;
+  while (i < slides.length) {
+
+    Logger.log(slides[i].getBackground().getType());
+    i++;
+  }
+
+  Logger.log("Looping with a for and getting the footer notes from each slide")
+  for (i = 0; i < slides.length; i++) {
+
+    Logger.log(slides[i].getNotesPage().getSpeakerNotesShape().getText().asString());
+  }
+
+  Logger.log("Looping with a more modern for loop and getting the layout from each slide")
+  for (var slide in slides) {
+
+    Logger.log(slides[slide].getLayout().getLayoutName());
+  }
+
+  Logger.log("Loopìng with a forEach using a callback function for each slide and then looping again through shapes on each slide");
+  //We use a counter variable to number slides. This could be done with a while loop directly rather than needing a specific variable
+  let slideCount = 0;
+  slides.forEach(function(slide) {
+
+    slideCount++;
+    // Slides have shapes, even text boxes are shapes
+    const shapes = slide.getShapes();
+
+    // Test if there are more than one element per slide for grammar ("element" or "elements")
+    if (shapes.length === 1) {
+
+      Logger.log("Slide number " + slideCount + " has " + shapes.length + " element");
+    } else {
+
+      Logger.log("Slide number " + slideCount + " has " + shapes.length + " elements");
+    }
+
+    shapes.forEach(function(shape) {
+
+      Logger.log("Looping again with forEach and callback function for each element on slide")
+      Logger.log(shape.getShapeType());
+      Logger.log("Element is " + shape.getLeft() + " pixels from the left edge");
+    });
+  });
+}
