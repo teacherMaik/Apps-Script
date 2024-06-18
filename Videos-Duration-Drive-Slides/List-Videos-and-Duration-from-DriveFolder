@@ -1,0 +1,93 @@
+//Script Bound to Spreadsheet at same Level as Folders with Videos. The Drive structure is a Primary folder for a Training Course. This training Course has 8 modules, each with it's own videos.
+
+//On Open Function to add menu to run script from Spreadsheet
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('List Videos').addItem('List', 'catVideos').addToUi();
+}
+
+//Catalogue Videos
+function catVideos() {
+
+  //Declare Spreadsheet and Data Range in Variables
+  const ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('All Videos');
+  let ssDataRange = ss.getDataRange();
+
+  //Declare Main folder with all Module Folders as a Constant
+  const folderMain = DriveApp.getFolderById('1vqaJDGeo1Dll2tiaiBmvSFuSmbQK5A9D');
+
+  //Declare regular expression to be used to test name of each folder, In case there are folders that are NOT Module folders with videos. Selects first three characters of the string.
+  const regEx = new RegExp('^.{3}');
+
+  //Declare variable which will be a FILE ITERATOR for all Folders within the Main Folder
+  let foldersMods = folderMain.getFolders();
+
+  //Declare counter variable which will allow us to append new info just after last row with Data on Spreadsheet
+  let row = ssDataRange.getLastRow() + 1;
+
+  //Loop through FILE ITERATOR, that is each folder within Main folder
+  while (foldersMods.hasNext()) {
+
+    //Declare Folder for iteration
+    let folderMod = foldersMods.next();
+
+    Logger.log(folderMod.getName());
+    Logger.log(regEx.exec(folderMod.getName().toString()));
+
+    //Test to see of Folder is actually a Module Folder which will contain videos using the regular expression. If the name of the folder begins with "MOD" (First 3 characters)
+    if (regEx.exec(folderMod.getName()) == "MOD") {
+
+      //Declare variable which will be a FILE ITERATOR with only video files, in case there would be any other types of files in Module folder
+      let modVideos = folderMod.getFilesByType("Video/mp4");
+      Logger.log(modVideos);
+
+      Logger.log("in folder " + folderMod.getName() + " there are " + modVideos.length + " videos");
+
+      //Loop through Videos FILE ITERATOR
+      while (modVideos.hasNext()) {
+
+        //Declares video for Iteration
+        let video = modVideos.next();
+
+        //Declare Text Finder to searcj for Name of Video on Cataligue Sheet to not repeat
+        let textFinder = ssDataRange.createTextFinder(video.getName().toString());
+
+        //Test to see if Video is catalogued and if not, then List Video on Sheet
+        if (textFinder.findNext() === null) {
+
+          //Get video metadata
+          let fileId = video.getId(); // Set the file ID of the video file.
+          let fields = "mimeType,name,videoMediaMetadata"; // duration is included in "videoMediaMetadata"
+          let url = "https://www.googleapis.com/drive/v3/files/" + fileId + "?fields=" + encodeURIComponent(fields) + "&access_token=" + ScriptApp.getOAuthToken();
+          let res = UrlFetchApp.fetch(url);
+          let obj = JSON.parse(res);
+          Logger.log("filename: %s, duration: %s seconds", obj.name, obj.videoMediaMetadata.durationMillis / 1000);
+
+          //Math Operations to calculate Minutes and Seconds using the milliseconds length metadata
+          let durationVidSeg = obj.videoMediaMetadata.durationMillis / 1000;
+          let durationVidMin = Math.floor(durationVidSeg / 60);
+          let durationMinSeg = parseInt((durationVidSeg % 60).toFixed(0));
+
+          //Conditional to add a 0 if seconds are not a double digit number as it would be added to tenths decimal rather than hundreths
+          if (durationMinSeg < 10) {
+            Logger.log("enter < 10");
+            var durationVid = durationVidMin + ":0" + durationMinSeg; 
+          }
+
+          //No problem if second is double digit but add only if seconds is double digit
+          if (durationMinSeg >= 10) {
+            Logger.log("enter >= 10");
+            var durationVid = durationVidMin + ":" + durationMinSeg;     
+          }
+
+          //On Catalogue Sheet sets Module name, name of video and length in m:ss
+          ss.getRange(row, 1).setValue(folderMod.getName());
+          ss.getRange(row, 2).setValue(obj.name)
+          ss.getRange(row, 3).setValue(durationVid);
+          //Logger.log(Drive.Files.get(video.getId()).videoMediaMetadata.durationMillis.valueOf());
+
+          row++;
+        }
+      }
+    }
+  }
+}
