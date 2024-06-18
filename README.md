@@ -5,6 +5,6 @@ For anybody who is comfortable working with Google apps such as Slides, Docs and
 ### Within this repository I share different projects as well as practice resources for anyone interested in exploring different methods and algorithms when interacting with the Google Apps. ###
 
 | Link to resource | Google App | Description |
-| --- | --- |
+| --- | --- | --- |
 | holaMundo | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Google_Slides_logo_%282014-2020%29.svg/1489px-Google_Slides_logo_%282014-2020%29.svg.png" alt="Google Apps Script" width="40" height="40"/> | Short Presentation with a Script demonstrating different ways to iterate over slides and get information and elements from each slide. More of a beginner level. |
 
