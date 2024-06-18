@@ -6,5 +6,5 @@ For anybody who is comfortable working with Google apps such as Slides, Docs and
 
 | Link to resource | App | Description |
 | --- | --- | --- |
-| holaMundo | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Google_Slides_logo_%282014-2020%29.svg/1489px-Google_Slides_logo_%282014-2020%29.svg.png" alt="Google Apps Script" width="40" height="48"/> | Short Presentation with a Script demonstrating different ways to iterate over slides and get information and elements from each slide. More of a beginner level. |
+| [iterateSlides](https://docs.google.com/presentation/d/1M935Rlmmc34RATZuDHvcMWiqY_qKG4pysf_RK2NguCY/copy) | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Google_Slides_logo_%282014-2020%29.svg/1489px-Google_Slides_logo_%282014-2020%29.svg.png" alt="Google Apps Script" width="40" height="48"/> | Short Presentation with a Script demonstrating different ways to iterate over slides and get information and elements from each slide. More of a beginner level. |
 
