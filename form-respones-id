@@ -1,0 +1,44 @@
+// This is a systemm to add a unique ID to Form Responses including year, country and id number.
+// You will need Form with a linked sheet for the answers. THIS SCRIPT IS ADDED TO THE ANSWER SHEET.
+// Technically this could be done with formulas on the Google sheet, however this exercise is quite simple and good practice!
+
+// Make a copy of this form, then create an answer sheet and do your magic!
+// https://docs.google.com/forms/d/1KpGOcVnzppDE_7gkkJ5l_IwDuHGNs5qVt-3BE_3NKFU/copy
+
+function createIdWithTrigger(){
+
+  // "Form Responses 1" is the default name for the sheet within the Spreadsheet. If you change the name in the Spreadsheet you must change it in your script as well.
+  var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Form Responses 1');
+
+  // Declare and assign variables. Using getLastRow() will get the most recent response when triggered. Then we get the values from the first 4 columns of that last row.
+  let lastRow = ss.getLastRow();
+  let data = ss.getRange(lastRow, 1, lastRow, 4).getValues();
+  let region = data[0][2];
+
+  // We can assume that the id number will be one less than the total number of rows with data as we do not need to count the header row
+  let uniqueId = lastRow - 1;
+
+  // Set header text in fifth column. You can actually do this manually in the Sheet, just keep in mind it may affect your data range.
+  ss.getRange(1, 5).setValue('Unique ID');
+
+  // Gets the date for today and assigns only the year to the variable "year"
+  let today = new Date();
+  let year = today.getFullYear().toString();
+
+  if (region == "España"){
+
+    ss.getRange(lastRow, 5).setValue(year + "ESP-" + uniqueId);
+  }
+  else if (region == "México"){
+    ss.getRange(lastRow, 1).setValue(year + "MEX-" + uniqueId);
+  }
+  else if (region == "Colombia"){
+    ss.getRange(lastRow, 1).setValue(year + "COL-" + uniqueId);
+  }
+  else if (region == "Chile"){
+    ss.getRange(lastRow, 1).setValue(year + "CHL-" + uniqueId)
+  }
+  else if (region == "Argentina" ){
+    ss.getRange(lastRow, 1).setValue(year + "ARG-" + uniqueId);
+  }
+}
