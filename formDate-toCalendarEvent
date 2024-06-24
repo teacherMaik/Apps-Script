@@ -1,11 +1,13 @@
-function reserveSpaces()
+function createCalEvent()
 {
-  const calId = copy and paste the calendar ID from the calendar config';
+  const calId = 'copy and paste the calendar ID from the calendar config';
 
   // By default when linking a sheet to a form the it is named "Form responses 1"
   const ssForm = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Respuestas de formulario 1');
   const ssFormData = ssForm.getDataRange().getValues();
   const formLastRow = ssForm.getLastRow() - 1;
+
+  // The first Column is always the Form Timestamp, the second is the emails when Form is set to collect emails
   const emailPerson = ssFormData[formLastRow][1];
 
   // It is important to work with the correct dtata format; strings, dates, numbers...
