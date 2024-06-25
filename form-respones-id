@@ -1,4 +1,4 @@
-// This is a systemm to add a unique ID to Form Responses including year, country and id number.
+// This is a system to add a unique ID to Form Responses including year, country and id number.
 // You will need Form with a linked sheet for the answers. THIS SCRIPT IS ADDED TO THE ANSWER SHEET.
 // Technically this could be done with formulas on the Google sheet, however this exercise is quite simple and good practice!
 
@@ -18,8 +18,11 @@ function createIdWithTrigger(){
   // We can assume that the id number will be one less than the total number of rows with data as we do not need to count the header row
   let uniqueId = lastRow - 1;
 
-  // Set header text in fifth column. You can actually do this manually in the Sheet, just keep in mind it may affect your data range.
-  ss.getRange(1, 5).setValue('Unique ID');
+  // Set header text in fifth column only on first response. You can actually do this manually in the Sheet, just keep in mind it may affect your data range.
+  if (ss.getRange(1, 5).getValue() == '') {
+
+    ss.getRange(1, 5).setValue('Unique ID');
+  }
 
   // Gets the date for today and assigns only the year to the variable "year"
   let today = new Date();
@@ -30,15 +33,15 @@ function createIdWithTrigger(){
     ss.getRange(lastRow, 5).setValue(year + "ESP-" + uniqueId);
   }
   else if (region == "México"){
-    ss.getRange(lastRow, 1).setValue(year + "MEX-" + uniqueId);
+    ss.getRange(lastRow, 5).setValue(year + "MEX-" + uniqueId);
   }
   else if (region == "Colombia"){
-    ss.getRange(lastRow, 1).setValue(year + "COL-" + uniqueId);
+    ss.getRange(lastRow, 5).setValue(year + "COL-" + uniqueId);
   }
   else if (region == "Chile"){
-    ss.getRange(lastRow, 1).setValue(year + "CHL-" + uniqueId)
+    ss.getRange(lastRow, 5).setValue(year + "CHL-" + uniqueId)
   }
   else if (region == "Argentina" ){
-    ss.getRange(lastRow, 1).setValue(year + "ARG-" + uniqueId);
+    ss.getRange(lastRow, 5).setValue(year + "ARG-" + uniqueId);
   }
 }
