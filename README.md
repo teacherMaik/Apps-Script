@@ -4,8 +4,6 @@ I didn't even realize it was a sub-set of javascript when I started however I've
 For anybody who is comfortable working with Google apps such as Slides, Docs and Sheets, Apps script can be a perfect opening to the world of programming. Because of the built-in apis we can interact with different Google Apps and see inmediate results from our work. <br />
 ### Within this repository I share different projects as well as practice resources for anyone interested in exploring different methods and algorithms when interacting with the Google Apps. ###
 
-<!--https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Google_Sheets_logo_%282014-2020%29.svg/1200px-Google_Sheets_logo_%282014-2020%29.svg.png-->
-
 | Link to resource | App | Description |
 | --- | --- | --- |
 | [iterateSlides](https://docs.google.com/presentation/d/1M935Rlmmc34RATZuDHvcMWiqY_qKG4pysf_RK2NguCY/copy) | <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/Google_Slides_logo_%282014-2020%29.svg/1489px-Google_Slides_logo_%282014-2020%29.svg.png" alt="Google Apps Script" width="40" height="48"/> | Short Presentation with a Script demonstrating different ways to iterate over slides and get information and elements from each slide. More of a beginner level. |
