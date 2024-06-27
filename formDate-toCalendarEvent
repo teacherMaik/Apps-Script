@@ -1,76 +1,30 @@
-function createCalEvent()
-{
-  const calId = 'copy and paste the calendar ID from the calendar config';
+// Very simple Script to have anybody fill out a form and have an event created. This event will be created on the form owner's calendar and whoever is submitting the form will be invited as a guest.
 
-  // By default when linking a sheet to a form the it is named "Form responses 1"
-  const ssForm = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Respuestas de formulario 1');
-  const ssFormData = ssForm.getDataRange().getValues();
-  const formLastRow = ssForm.getLastRow() - 1;
+// Make a copy of the Form woth the following link. Then create a Response Sheet. Open the Apps Script editor and paste in this script
+// https://docs.google.com/forms/d/1aME78EsIUFjvoH7wUSQ2A_hV7yLIQHYRaO-vNVY-UKs/copy
 
-  // The first Column is always the Form Timestamp, the second is the emails when Form is set to collect emails
-  const emailPerson = ssFormData[formLastRow][1];
+function formToCalEvent() {
 
-  // It is important to work with the correct dtata format; strings, dates, numbers...
-  const buildingSpace = ssFormData[formLastRow][2].toString();
+  // You can get Any aditional created calendar by using getCalendarById();
+  const primCal = CalendarApp.getDefaultCalendar();
+  const ssResponses = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Form Responses 1');
+  const ssResponsesData = ssResponses.getDataRange().getValues();
+  const lastRowData = ssResponses.getLastRow() - 1;
 
-  // Format the date from the Google Form so we can create a Google Calendar event
-  const day = Utilities.formatDate(ssFormData[formLastRow][3], "GMT-5", "MMMM dd, yyyy");
+  let email = ssResponsesData[lastRowData][1];
+  let eventTitle = ssResponsesData[lastRowData][2];
 
-  // When Google Forms submits an hour question, we actualy have an entire date. We use substring to extract the hours only
-  const start = ssFormData[formLastRow][4].toString().substring(16, 24);
-  const end = ssFormData[formLastRow][5].toString().substring(16, 24);
-  
-  // Concatenate formatted Date and hours to create Calendar Event
-  let newStartDate = new Date(day + " " + start);
-  let newEndDate = new Date(day + " " + end);
+  // It is VERY IMPORTANT that you have your SpreadSheet as well as your Script and Calendar Timezones set to the SAME. In this example I work in GMT+2. Then Format the date to what CalendarApp expects to create events
+  let day = Utilities.formatDate(ssResponsesData[lastRowData][3], "GMT+2", "MMMM dd, yyyy");
 
-  // Re-format the date so we can look at Calendar (using Id) to look for events of that day
-  let dayToSearch = new Date(Utilities.formatDate(ssFormData[formLastRow][3], "GMT-5", "yyyy, M, dd"));
-  let events = CalendarApp.getCalendarById(calId).getEventsForDay(dayToSearch);
+  // Use substring method to get only the hours, minutes from time question which is parsed as a full date
+  let start = ssResponsesData[lastRowData][4].toString().substring(16, 24);
+  let end = ssResponsesData[lastRowData][5].toString().substring(16, 24);
 
-  // We get all events in an object and need to iterate over these events.
-  // Use a counter to track all events that do not ahve a conflict with solicited reservation.
-  let i = 0;
-  events.forEach((event) => {
+  // Construct the start and en objects
+  let eventStart = new Date(day + " " + start);
+  let eventEnd = new Date(day + " " + end);
 
-    // Check to see if solicited event is the same space. If not, just continue
-    if (buildingSpace != event.getTitle().toString())
-    {
-      i++;
-    }
-
-    // If it is the same space, we check more aspects
-    else if (buildingSpace === event.getTitle().toString())
-    {
-
-      // Check if start time and end time are before start time of existing event
-      if (newStartDate < event.getStartTime() && newEndDate <= event.getStartTime() && buildingSpace === event.getTitle().toString())
-      {
-        i++;
-      }
-
-      // Check if start time and end time are after end time of existing event
-      else if (newStartDate >= event.getEndTime() && newEndDate > event.getEndTime())
-      {
-        i++;
-      }
-    }
-  });
-
-  // Check to see if counter equals the same number of events for day. If so, we can agend the event, invite teacher soliciting event and send info.
-  if (i === events.length)
-  {
-    CalendarApp.getCalendarById(calId).createEvent(buildingSpace, newStartDate, newEndDate).addGuest(emailPerson);
-    ssForm.getRange(formLastRow + 1, 7).setValue('Sí');
-  }
-
-  // If there is a conflict (hours) then we send email informing of conflict and that event was not agended.
-  else
-  {
-    ssForm.getRange(formLastRow + 1, 7).setValue('No');
-  }
+  // Create event and add email of person who submitted the form. CalendarApp WILL NOT send an email
+  primCal.createEvent(eventTitle, eventStart, eventEnd).addGuest(email);
 }
-
-
-
-
