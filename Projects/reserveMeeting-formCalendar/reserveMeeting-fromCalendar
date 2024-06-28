@@ -1,0 +1,191 @@
+//
+
+// Function to check if the current reservation shares the same year and space as previous reservations
+function checkRange(idRangeVals, toCheck)
+{
+  // Creates new two dimensional array with only spaces coinciding with current reservation
+  const foundIds = idRangeVals.filter(id => id[0].toString().substring(0, 10) === toCheck);
+
+  // Check to see if filtered array has any coincindences 
+  if (foundIds[0])
+  {
+    // Create a new simple array with only the ID numbers, by extracting all characters after position 11
+    const foundIdNums = foundIds.map(id => parseInt(id[0].toString().substring(11)));
+
+    // Use Math.max and dot notation to iterate over simple array and return the highest value (Which is always the las, but this is more convewntional) + 1 to increase the ID number
+    return (Math.max(...foundIdNums) + 1);
+  }
+  else
+  {
+    // If no coincidences, it is the first reservation of the current year, so we return the value 1
+    return (1);
+  }
+}
+
+// Function to create unique ID which calls the previous checkRange() function
+function createId(uniqueSpace, idRangeVals)
+{
+  // Create new date from today and use .substring() to extract only the last two digits
+  const today = new Date();
+  const thisYear = today.getFullYear().toString().substring(2, 4);
+
+  // Declare variable to check previous reservationns of space/resource to increase by 1. Format contains 4 parts: YEAR-CATEGORY-space-number
+  let toCheck = '';
+  let coordEmail = 'amoviles@gimnasiovermont.edu.co';
+
+  // Chain of IF conditions to set first 3 parts of unique ID
+  if (uniqueSpace === 'Chromebook A')
+  {
+    toCheck = thisYear + '-AM-' + 'crbA';
+  } 
+  else if (uniqueSpace === 'Chromebook B')
+  {
+    toCheck = thisYear + '-AM-' + 'crbB';
+  } 
+  else if (uniqueSpace === 'Chromebook C')
+  {
+    toCheck = thisYear + '-AM-' + 'crbC';
+  } 
+  else if (uniqueSpace === 'Chromebook D')
+  {
+    toCheck = thisYear + '-AM-' + 'crbD';
+  }
+  else if (uniqueSpace === 'Chromebook E')
+  {
+    toCheck = thisYear + '-AM-' + 'crbE';
+  }
+  else if (uniqueSpace === 'Chromebook F')
+  {
+    toCheck = thisYear + '-AM-' + 'crbF';
+  }
+  else if (uniqueSpace === 'Tablets')
+  {
+    toCheck = thisYear + '-AM-' + 'tabs';
+  }
+
+  // Return an array by calling the checkRange function to concatenate the uniqueID number as first argument and the email of person who made the reservation as second argument
+  return [toCheck + "-" + checkRange(idRangeVals, toCheck), coordEmail];
+}
+
+// Main function to reserve space, which calls the previous createId() function
+function reserveSpaces()
+{
+
+  // Declare and assign constant variables. Here we use a Calendar created specifically for Chromebbok and Tablet reservations but you could use the CalendarApp.getDefaultCalendar() method
+  const calId = 'idstring@group.calendar.google.com';
+  const ssForm = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Respuestas de formulario 1');
+  const ssFormData = ssForm.getDataRange().getValues();
+  const formLastRow = ssForm.getLastRow() - 1;
+  const emailPerson = ssFormData[formLastRow][2];
+
+  const buildingSpace = ssFormData[formLastRow][3].toString();
+
+  // Very important to format the date from the Form so it can be used with the CalendarApp
+  const day = Utilities.formatDate(ssFormData[formLastRow][4], "GMT-5", "MMMM dd, yyyy");
+
+  // Extract only the HH:MM:SS from the Time questions, as they are saved as dates as well.
+  const start = ssFormData[formLastRow][5].toString().substring(16, 24);
+  const end = ssFormData[formLastRow][6].toString().substring(16, 24);
+  const eventTitle = ssFormData[formLastRow][7];
+  const numAssist = ssFormData[formLastRow][8];
+  let eventDetails = [];
+  
+  // If the end time is greater than the start time, this will cause a problem when CalendarApp.createEvent() is called, so we inform the person soliciting the reservation of their mistake
+  if (end < start)
+  {
+    MailApp.sendEmail({
+
+      to: emailPerson,
+      subject: 'Problema con su Reserva para ' + eventTitle,
+      htmlBody: 'Debido a un error en los datos solicitados, no ha sido posible completar la reserva solicitada. La hora de finalización dela reserva debe ser posterior a la hora de comienzo.<br /><br />' + 
+      'Hemos recibido una solicitud para comenzar a las ' + start + ' finalizar a las ' + end + '.<br /><br />' +
+      'Vuelva a intentar solicitar la reserva, muchas gracias.'
+    });
+
+    return ssForm.getRange(formLastRow + 1, 10).setValue('Error');
+  }
+
+  // Create start date and end date objects to be able create the event
+  let newStartDate = new Date(day + " " + start);
+  let newEndDate = new Date(day + " " + end);
+
+  // Format the day once again to be able to search the solicited day on Calendar for Existing events and get all events for that day in array
+  let dayToSearch = new Date(Utilities.formatDate(ssFormData[formLastRow][4], "GMT-5", "yyyy, M, dd"));
+  let events = CalendarApp.getCalendarById(calId).getEventsForDay(dayToSearch);
+
+  // Declare and assign an event counter. This counter will be upped every time their is NOT a conflict.
+  let i = 0;
+
+  //  Iterate over events with forEach function
+  events.forEach((event) => {
+
+    // We can skip any events that do not require the same building and space, which we can obtain from the event description
+    if (buildingSpace != event.getDescription().toString())
+    {
+      i++;
+    }
+    // If events share same building and same space, we check more details
+    else if (buildingSpace === event.getDescription().toString())
+    {
+      // If both new start time and new end time are before the start time of existing event, new event is ok and can be created
+      if (newStartDate < event.getStartTime() && newEndDate <= event.getStartTime())
+      {
+        i++;
+      }
+      // If both the new start time and new end time are after the end time of existing event, new event is ok and can be created
+      else if (newStartDate >= event.getEndTime() && newEndDate > event.getEndTime())
+      {
+        i++;
+      }
+    }
+  });
+
+  // If all events for day have no conflict, then the counter i will equal the number of events for that day, assuming then we can create the new event
+  if (i === events.length)
+  {
+    eventDetails = createId(buildingSpace, ssForm.getRange(2, 1, formLastRow, 1).getValues());
+    let newUniqueId = eventDetails[0];
+    let eventCoord = eventDetails[1];
+
+    // Event is created with uniqueID and title in event name
+    let newCalEvent = CalendarApp.getCalendarById(calId).createEvent(newUniqueId + ': ' + eventTitle, newStartDate, newEndDate);
+    newCalEvent.setDescription(buildingSpace);
+    newCalEvent.addGuest(emailPerson);
+    newCalEvent.addGuest(eventCoord);
+    
+    // Add uniqueID and information signalling event has been created on spreadsheet
+    ssForm.getRange(formLastRow + 1, 10).setValue('Sí');
+    ssForm.getRange(formLastRow + 1, 1).setValue(eventDetails[0]);
+
+    // Send email notification to person who solicited the reservation confirming the event creation with details.
+    MailApp.sendEmail({
+
+      to: emailPerson,
+      subject: 'Confirmación de su Reserva para ' + eventTitle,
+      htmlBody: 'Nos complace confirmar su reserva de ' + buildingSpace + '. A continuación le facilitamos los detalles:' + '<br /><br />' +  
+        '<strong>Fecha:</strong> ' +  Utilities.formatDate(ssFormData[formLastRow][4], "GMT-5", "dd-M-yyyy") + '<br />' + 
+        '<strong>Horario:</strong> Desde las ' + start + ' hasta las ' + end + '.' + '<br />' +
+        '<strong>Estimación de asistente:</strong> ' + numAssist + '<br /><br />' + 
+        'Si tiene alguna pregunta o necesita solicitar medidas adicionales, contáctese con la persona responsable del recurso o espacio reservado.<br /><br />' + 
+        'Si necesita cancelar la reserva lo puede hacer desde la intranet mismo con el formulario de cancelación.<br /><br />' + 
+        'Muchas gracias'
+
+    });
+  }
+  else
+  {
+    Logger.log("i is " + i + " and numEvents is " + events.length + " we have a conflict so no event added");
+    ssForm.getRange(formLastRow + 1, 10).setValue('No');
+    MailApp.sendEmail({
+
+      to: emailPerson,
+      subject: 'Denegación de su Reserva para ' + eventTitle,
+      htmlBody: 'Lamentamos comunicar que su solicitud de reserva de ' + buildingSpace + ' para el día ' + Utilities.formatDate(ssFormData[formLastRow][4], "GMT-5", "dd-M-yyyy") + ' en el horario desde las ' + start + ' hasta las ' + end + ' <strong>no ha sido aprobada.</strong><br /><br />' +
+      'La sala o el recurso no está disponible en el horario solicitado o hay un conflicto con otra reserva.<br /><br />' + 
+      'Se sugiere realizar una nueva solicitud, recuerde verificar el calendario antes de enviarla.<br /><br />' +
+      'Si tiene alguna pregunta, contáctese con correo electrónico del responsable del recurso o espacio reservado.<br /><br />' +
+      'Muchas gracias'
+
+    });
+  }
+}
