@@ -1,0 +1,223 @@
+// Función para identificar qué categoría de espacios para buscar la reserva a cancelar
+function getSheetCalIds(catToCheck) {
+
+  // ID's de los calendarios y Hojas de Cálculo de cada espacio
+  const aulasEspecialCalId = 'c_342f963a7486af17a810ebdeec92e3e3b17b69e0288800c5a844b5248df3fcb2@group.calendar.google.com';
+  const aulasEspecialSheetId = '1pGurCAghIstskDXDYxQqJX5pApXdbWpD8CL_knU3TqY';
+
+  const aulasDeportivosCalId = 'c_37d4b52acb9885f4cc9cf9fbdd5c9df386f167f5f6771bf78773e622c1540332@group.calendar.google.com';
+  const aulasDeportivosSheetId = '13MZ9yuCcCCvEsELeyWET5RWFWk9cHF2U17i-hl8U3Ok';
+
+  const aulasPlus25CalId = 'c_7f6d0e21a9e3e172ed6065652fcc81103b67f8151b611703954011ec78f03c24@group.calendar.google.com';
+  const aulasPlus25SheetId = '1q1jSSPLlHOmi03BifkB6Mj5mIhlIdY_5xkweoaW9p-A';
+
+  const aulasPeqCalId = 'c_df7d9084a1d8f89249d0e7e4da9ef67d77a126c285ea1ecb4ed9c99403e345b7@group.calendar.google.com';
+  const aulasPeqSheetId = '1I--6Fx7uSkBrZU211i9zBU6bpNhN50Up0rTy8_Khguw';
+
+  const aulasMovCalId = 'c_bc8aa44fbae84001dddfe0e26d2459352ad9aa59d2cc355a75161b8f2a03769c@group.calendar.google.com';
+  const aulasMovSheetId = '1-cOlTgOipI4gGm462mzUQ5KoggGl4VwGW2JtNF6JAps';
+
+  console.log("getting sheet and calendar IDs");
+  // Serie de condicionales para devolver las ID's de la Hoja de Cálculo y correspondiente Calendar de la categoría de espacios de la reserva a cancelar
+  if (catToCheck === 'AE')
+  {
+    console.log("returning AE space");
+    return [aulasEspecialCalId, aulasEspecialSheetId];
+  }
+  else if (catToCheck === 'ED')
+  {
+    console.log("returning Ed space");
+    return [aulasDeportivosCalId, aulasDeportivosSheetId];
+  }
+  else if (catToCheck === 'EG')
+  {
+    console.log("returning EG space");
+    return [aulasPlus25CalId, aulasPlus25SheetId];
+  }
+  else if (catToCheck === 'EP')
+  {
+    console.log("returning EP space");
+    return [aulasPeqCalId, aulasPeqSheetId];
+  }
+  else if (catToCheck === 'AM')
+  {
+    console.log("returning AM space");
+    return [aulasMovCalId, aulasMovSheetId];
+  }
+  else
+  {
+    return false;
+  }
+}
+
+// Función para asegurar que la ID introducido desde el formulario de cancelación esté presente en la Hoja de Cálculo de la categoría correspondiente
+function checkIds(ssIdToCheck, idToCheck) {
+
+  console.log("entering checkIds() function");
+  const ss = SpreadsheetApp.openById(ssIdToCheck).getSheetByName('Respuestas de formulario 1');
+  const ssData = ss.getDataRange().getValues();
+  const lastRow = ss.getLastRow() - 1;
+  const lastCol = ss.getLastColumn();
+  const idsRange = ss.getRange(2, 1, lastRow, 1);
+  const idsRangeVals = idsRange.getValues();
+
+  // Con el método de map.indexOf se verifica si la ID está en la columna A (ids[0]). Este índice se guarda en la variable "row". Si es mayor que 1, se encuentra.
+  const row = idsRangeVals.map(ids => ids[0]).indexOf(idToCheck) + 2;
+
+  if (row > 1)
+  {
+    console.log("Row " + row + " found in sheetId " + ssIdToCheck);
+    const eventDetailsRange = ss.getRange(row, 1, 1, lastCol).getValues();
+    const eventTitle = idToCheck + ": " + eventDetailsRange[0][7];
+    const eventDay = new Date (Utilities.formatDate(eventDetailsRange[0][4], "GMT-5", "yyyy, M, dd"));
+    const eventSpace = eventDetailsRange[0][3];
+
+    console.log("Returning " + [eventDay, eventSpace, row]);
+
+    // Al encontrar la ID, se devuelve el día, título, espacio y fila en cuestión (para luego pintarla entera de rojo)
+    return [eventDay, eventTitle, eventSpace, row];
+  }
+  else
+  {
+    // Al no encontrarla, debido a un error o algo, devuelve falso
+    console.log("returning false");
+    return [];
+  }
+}
+
+// Función que elimina el evento del calendar de la categoría de espacios en cuestión. Recibe como argumentos la ID del calendario, el día y el título
+function deleteCalEvent(eventCal, eventDay, eventTitle) {
+
+  console.log("entering deleteCalEvent()");
+  const cal = CalendarApp.getCalendarById(eventCal);
+
+  // Obtiene todos los eventos del día en cuestión del calendario en cuestión para iterar sobre ellos y comprobar si coinciden los títulos. Se declara una variable para comprobar si se eliina el evento o no
+  const events = cal.getEventsForDay(eventDay);
+  let eventDeleted = false;
+  events.forEach(event => {
+
+    //
+    console.log("checking event " + event.getTitle() + " against " + eventTitle);
+    if (event.getTitle() === eventTitle)
+    {
+      console.log("found event " + event.getTitle() + " with description " + event.getDescription() + " starting at " + event.getStartTime());
+
+      // Se elimina el evento y cambia la variable a true para devolver ese valor
+      event.deleteEvent();
+      eventDeleted = true;
+    }
+    else
+    {
+      console.log("returning false");
+    }
+  });
+
+  // Se devuelve verdadero o falso según si se ha eliminado el evento o no
+  return (eventDeleted);
+}
+
+
+// Función principal que corre con el trigger (disparador) cada vez que alguien envía el formulario
+function cancelRes() {
+
+  const ssCancel = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Formulario Cancelación');
+  const lastRow = ssCancel.getLastRow() - 1;
+  const ssCancelData = ssCancel.getDataRange().getValues();
+
+  // Se guarda en variables el email de la persona que solicita la cancelación del evento y la id del evento
+  const emailPerson = ssCancelData[lastRow][1];
+  const idToCheck = ssCancelData[lastRow][2];
+
+  // Se extrae los 4 carácteres de la categoría de espacios y se pasa como argumento a la función para obtener las ID's del calendario y Hoja de Cálculo correspondientes. Estos datos se guardan en un array, catDetails, la ID del calendario como primer valor y la Hoja como segundo valor
+  const catDetails = getSheetCalIds(idToCheck.substring(3, 5));
+
+  let eventDetails = [];
+  let eventCal = '';
+  let eventSheet = '';
+
+  if (catDetails) {
+
+    eventCal = catDetails[0];
+    eventSheet = catDetails[1];
+
+    // Con estos 2 datos, los pasamos como argumentos a la función para comprobar si la Hoja tiene la ID enviada a través del formulario. Esta función devuelve un array que son el día del evento y el título
+    eventDetails = checkIds(eventSheet, idToCheck);
+  }
+
+  
+
+  // En caso de haber detalles (día y título), se procede a eliminar el evento
+  if (eventDetails[0])
+  {
+    console.log("We have event details " + eventDetails);
+
+    // Se llama a la función para eliminar el evento pasando los argumentos de la ID del calendario, el día y el título. Esta función devuelve o verdadero o falso, para poder mandar un correo u otro, informando de si se ha eliminado correctamente o no.
+    const eventDeleted = deleteCalEvent(eventCal, eventDetails[0], eventDetails[1]);
+    console.log("eventDeleted = " + eventDeleted);
+
+    // Al confirmar
+    if (eventDeleted)
+    {
+      console.log("Moving to change data on sheet and send mail");
+      const ss = SpreadsheetApp.openById(eventSheet).getSheetByName('Respuestas de formulario 1');
+      ss.getRange(eventDetails[3], 1, 1, ss.getLastColumn()).setBackground('red');
+      ss.getRange(eventDetails[3], ss.getLastColumn()).setValue('Cancelado');
+
+      MailApp.sendEmail({
+        to: emailPerson,
+        subject: 'Cancelación de tu reserva para ' + eventDetails[1],
+        htmlBody: 'Este correo es para <strong>confirmar la cancelación</strong> de tu reserva del espacio <strong>' + eventDetails[2] + '</strong> el día ' + eventDetails[0] + '.<br /><br />' + 
+        'Agradecemos su compromiso y si tiene alguna duda o solicitud particular pongase en contacto con el responsable del espacio. <br /><br />' + 
+        'Muchas gracias.'
+      });
+    }
+  } else {
+
+    MailApp.sendEmail({
+      to: emailPerson,
+      subject: 'Cancelación de tu reserva para ' + idToCheck,
+      htmlBody: 'Este correo es para informarle que no se ha detectado ninguna reserva con la ID ' + idToCheck + ' que ha enviado con el formulario.<br /><br />' + 
+      'Revise su calendario para asegurar que tenga el espacio reservado y/o compruebe que ha introducido corrrectamente la ID.<br /><br />' + 
+      'Agradecemos su compromiso y si tiene alguna duda o solicitud particular pongase en contacto con el responsable del espacio, muchas gracias.'
+    });
+  }
+  
+}
+
+function methods() {
+  /*
+  const ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('TODAS');
+  const lastRow = ss.getLastRow();
+
+  console.log(lastRow);
+  const ids = ss.getRange(2, 5, lastRow - 1).getValues();
+
+  console.log(ids);
+
+  const foundIds = ids.filter(id => id[0].toString().substring(0, 7) === 'YY-bolb');
+
+  console.log(foundIds);
+
+  const regExNum = new RegExp('($<=\-).');
+  const foundIdNums = foundIds.map(id => parseInt(id[0].toString().substring(8)));
+
+  if (foundIds[0]) {
+    console.log(foundIdNums);
+    console.log(Math.max(...foundIdNums));
+  } else {
+    console.log("nothing found");
+  }
+
+  const testId = 'YY-bomb-23'
+  */
+
+  const ssCancel = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Respuestas de formulario 1');
+  const lastRow = ssCancel.getLastRow() - 1;
+  const idToCheck = 'YY-ED-coli-n'
+
+  console.log(idToCheck.substring(3, 5));
+  console.log(lastRow);
+  const idRangeVals = ssCancel.getRange(2, 3, lastRow).getValues();
+
+  console.log(idRangeVals);
+}
