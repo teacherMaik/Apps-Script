@@ -1,0 +1,39 @@
+function cleanName(entry) {
+
+  // prepositions in name parts to not caapitalize
+  const lowerWords = ["de", "del", "la", "las", "los", "y"];
+
+  Separates each name part (first name, first surname, second surname) into it's own parts
+  function properWord(word, isFirst, isSingleWord) {
+    if (word.includes("-")) {
+      return word
+        .split("-")
+        .map((w, idx) => properWord(w, idx === 0, false))
+        .join("-");
+    }
+
+    // all parts to lowercase
+    word = word.toLowerCase();
+
+    // Only makes proper non-preposition words
+    if (lowerWords.includes(word)) {
+      return word;
+    } else {
+      return word.charAt(0).toUpperCase() + word.slice(1);;
+    }
+  }
+
+  // Joins each cleaned name part
+  function cleanField(value) {
+    let parts = value.replace(/\s{2,}/g, " ").trim().split(" ");
+    return parts
+      .map((w, idx) => properWord(w, idx === 0, parts.length === 1))
+      .join(" ");
+  }
+
+  // Returns cleaned Cleaned proper name (first, first surname, second surname)
+  let firstName = cleanField(entry[2] || "");
+  let primerApellido = cleanField(entry[3] || "");
+  let segundoApellido = cleanField(entry[4] || "");
+  return [firstName, primerApellido, segundoApellido];
+}
